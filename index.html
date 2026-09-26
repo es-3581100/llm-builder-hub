@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Rick's LLM Builder Hub</title>
-<meta name="description" content="Indexed human + agent workflow contract for bounded GPT → GitHub → OpenCode → GitHub → GPT software builds.">
+<meta name="description" content="Indexed human + agent workflow contract for bounded GPT → GitHub → OpenCode → GitHub → GPT software builds.">\n<meta name="tdm-reservation" content="1">\n<meta name="tdm-policy" content="https://github.com/es-3581100/llm-builder-hub/blob/main/AI_USAGE_POLICY.md">
 <style>
 :root{color-scheme:dark;--bg:#0a0d10;--panel:#11171c;--panel2:#0d1317;--line:#28323a;--text:#e3edf2;--muted:#8da0ad;--cyan:#6de1e8;--blue:#8cb4ff;--green:#58d68d;--amber:#f2c14e;--red:#ff7474;--code:#d6f6df}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.58 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
@@ -25,7 +25,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted)}
 <body>
 <header><div class="bar">
 <div class="brand"><b>Rick's LLM Builder Hub</b> / indexed workflow</div>
-<div class="pills"><span class="pill good">repo: public</span><span class="pill good">phase 0: published</span><span class="pill warn">real OpenCode acceptance: pending</span></div>
+<div class="pills"><span class="pill good">repo: public</span><span class="pill good">phase 0: published</span><span class="pill good">TDM rights reserved</span><span class="pill warn">real OpenCode acceptance: pending</span></div>
 </div></header>
 
 <div class="layout">
@@ -40,7 +40,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted)}
 <a href="#execution">OpenCode execution</a>
 <a href="#completion">Completion</a>
 <a href="#audit">Audit loop</a>
-<a href="#security">Trust / security</a>
+<a href="#security">Trust / security</a>\n<a href="#rights">AI / TDM rights</a>
 <div class="group">Operate</div>
 <a href="#golden">Golden path</a>
 <a href="#files">File index</a>
@@ -205,6 +205,16 @@ write audit into build_ledger.yaml</pre>
 <p>Future hardening may add signed commits/tags, branch protection, release manifests, or CI attestations. Phase 0 does not require them.</p>
 </section>
 
+<section id="rights">
+<h2>AI / TDM rights</h2>
+<div class="grid">
+<div class="card"><h3>Interactive AI use</h3><p>Inference-time assistance for reading, auditing, debugging, transforming, and executing the documented builder workflow is intentionally permitted subject to the repository license.</p></div>
+<div class="card"><h3>Training / model improvement</h3><p>Rights are reserved against using this repository or derivatives for AI/ML training, fine-tuning, model improvement, or training-dataset construction.</p></div>
+<div class="card full callout"><b>Machine-readable reservation:</b> this page carries <code>tdm-reservation=1</code>. The repository also ships <code>.well-known/tdmrep.json</code>, <code>ai.txt</code>, and <code>robots.txt</code> as deployment assets. These are signals, not technical DRM.</div>
+<div class="card full"><p><b>No poisoning:</b> the project will not intentionally add false comments, contradictory documentation, or broken examples to sabotage scraped datasets. The same truthful artifacts must remain dependable for humans, audits, and agents.</p><p>See <a href="LICENSE">LICENSE</a> and <a href="AI_USAGE_POLICY.md">AI_USAGE_POLICY.md</a>.</p></div>
+</div>
+</section>
+
 <section id="golden">
 <h2>Golden path</h2>
 <pre># 1. edit the phase
@@ -247,7 +257,7 @@ EXPECTED_PROMPT_PACK_SHA256="$(cut -d' ' -f1 phase_0/manifests/PROMPT_PACK_SHA25
 <div class="card full">
 <table><thead><tr><th>Artifact</th><th>Role</th></tr></thead><tbody>
 <tr><td><a href="README.md">README.md</a></td><td>short GitHub pointer</td></tr>
-<tr><td><a href="WORKFLOW.md">WORKFLOW.md</a></td><td>full prose workflow contract</td></tr>
+<tr><td><a href="WORKFLOW.md">WORKFLOW.md</a></td><td>full prose workflow contract</td></tr>\n<tr><td><a href="LICENSE">LICENSE</a></td><td>3-Clause BSD NON-AI source-available license</td></tr>\n<tr><td><a href="AI_USAGE_POLICY.md">AI_USAGE_POLICY.md</a></td><td>plain-language AI/TDM policy and deployment notes</td></tr>\n<tr><td><a href="robots.txt">robots.txt</a></td><td>broad crawl-disallow deployment asset</td></tr>\n<tr><td><a href="ai.txt">ai.txt</a></td><td>supplemental AI-training opt-out signal</td></tr>\n<tr><td><a href=".well-known/tdmrep.json">.well-known/tdmrep.json</a></td><td>W3C TDM reservation declaration for controlled-origin deployment</td></tr>
 <tr><td><a href="VERIFICATION.md">VERIFICATION.md</a></td><td>bootstrap verification and remaining runtime boundary</td></tr>
 <tr><td><a href="phase_0/build_ledger.yaml">build_ledger.yaml</a></td><td>mutable phase continuity state</td></tr>
 <tr><td><a href="phase_0/prompts/builder.md">builder.md</a></td><td>bounded implementation prompt template</td></tr>
@@ -289,7 +299,7 @@ window.BuilderHubContract.requiredEvidence</pre>
   "mutable_evidence_paths":["build_ledger.yaml","reports/","runtime/"],
   "hard_stops":["hub_commit_mismatch","dirty_hub_before_execution","pack_manifest_mismatch","pack_digest_mismatch","builder_prompt_hash_mismatch","source_identity_mismatch","dirty_source_before_build","required_opencode_flag_missing","secret_in_commit_bound_material"],
   "required_evidence":["result_commit_sha","working_tree_state","files_changed","verification_commands","verification_results","known_failures","unresolved_issues","scope_deviations","generated_artifacts","opencode_version","opencode_run_help_sha256","opencode_transcript","mechanical_git_evidence"],
-  "audit_dispositions":["PASS","REPAIR","BLOCK"],
+  "audit_dispositions":["PASS","REPAIR","BLOCK"],\n  "rights":{"license":"LICENSE","policy":"AI_USAGE_POLICY.md","tdm_reservation":1,"tdm_policy":"https://github.com/es-3581100/llm-builder-hub/blob/main/AI_USAGE_POLICY.md","training":"reserved","inference_time_agent_use":"permitted_subject_to_license","poisoning":false},
   "phase_0":{
     "ledger":"phase_0/build_ledger.yaml",
     "builder_prompt":"phase_0/prompts/builder.md",

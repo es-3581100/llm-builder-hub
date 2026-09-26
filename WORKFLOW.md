@@ -344,3 +344,23 @@ Runtime-only remaining work:
 - update the ledger to PASS / REPAIR / BLOCK.
 
 That final loop cannot be truthfully marked complete until it runs on the user's machine against the real OpenCode execution surface.
+
+## AI / TDM rights layer
+
+The public hub remains intentionally usable by human developers and by AI assistants at inference time, but it now carries an explicit no-training rights layer.
+
+Root-level rights artifacts:
+
+```text
+LICENSE
+AI_USAGE_POLICY.md
+robots.txt
+ai.txt
+.well-known/tdmrep.json
+```
+
+`index.html` also embeds `<meta name="tdm-reservation" content="1">` and a policy pointer.
+
+These controls are intentionally **non-poisoning**: do not add false comments, misleading examples, or contradictory code to degrade scraped training data. Such content would also reduce the reliability of the builder hub itself.
+
+The repository-level crawler files do not control the `github.com` origin. They are deployment assets for a custom/site origin controlled by the project owner. The license and policy still communicate the repository's rights boundary wherever the repository is copied.

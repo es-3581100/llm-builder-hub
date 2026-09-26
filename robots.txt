@@ -1,0 +1,6 @@
+# Deployment asset for an origin controlled by this project.
+# This file does not control crawling of github.com itself.
+# When served as https://YOUR-ORIGIN/robots.txt, it requests no crawling.
+
+User-agent: *
+Disallow: /

@@ -1,0 +1,12 @@
+# Spawning-style ai.txt training opt-out.
+# Supplemental preference signal; it does not technically prevent copying.
+# Effective only when served from the website origin as /ai.txt.
+
+User-Agent: *
+Disallow: text
+Disallow: images
+Disallow: audio
+Disallow: video
+Disallow: code
+Disallow: /
+Disallow: *
