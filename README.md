@@ -6,6 +6,8 @@ Phase 0 bootstrap files live under [`phase_0/`](./phase_0/).
 
 Phase completion, host-acceptance, publication, and human-decision handling are defined in [`PHASE_COMPLETION_SOP.md`](./PHASE_COMPLETION_SOP.md).
 
+Real execution records are indexed under [`runtime_tests/`](./runtime_tests/). The first recorded run is **RT-001 — Don-Dawg Phase-0**.
+
 Core invariant:
 
 > GPT designs → Git records → OpenCode executes → Git records → GPT audits.

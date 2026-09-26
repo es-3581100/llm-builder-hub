@@ -1,0 +1,100 @@
+schema_version: "1.0"
+runtime_test_id: RT-001
+date: "2026-09-26"
+project:
+  name: Don-Dawg
+  phase: phase_0
+  planned_repository: es-3581100/don-dawg
+  planned_visibility: private
+artifact:
+  name: Don-Dawg-Official-Phase0.html5
+  sha256: 03084edb2c97372b8c9eebe27db3c3934d393cda7b433672fb14d8a00d4a2e9b
+source_history:
+  baseline_commit: ab08ca64c8819d4fac37e7ed5903bed0ce61e832
+  initial_result_commit: f789de29a8b5918cfd2dadf12107707421b8159d
+  retry_result_commit: fa7dfa91a656bb17acc2957413c1f3bb94613c84
+  retry_restart_performed: false
+  remote_verification: pending
+initial_run:
+  disposition: PHASE0_COMPLETION_PARTIAL
+  requirements:
+    total: 24
+    done: 21
+    partial: 2
+    blocked: 1
+  todos:
+    total: 10
+    done: 5
+    blocked: 5
+  repository_tests:
+    passed: 23
+    total: 23
+  major_checks:
+    pass: 15
+    fail: 0
+  runtime_finding:
+    category: artifact_fidelity
+    summary: reconstructed HTML5 preserved file bytes but lost executable mode metadata
+    repaired_paths:
+      - don-dawg
+      - don_dawg.py
+      - install.sh
+    regression_added: true
+framework_fix:
+  finding: external host/publication/human dependencies were allowed to collapse repository build status into PARTIAL
+  sop_added_commit: ac50c6fd3e8588d39eb0d07893c7a7c7d0f0f8b3
+  workflow_pointer_commit: 05eac1734143e44e059d281df7329b313e019b06
+  readme_pointer_commit: 29c3861ca08cbe9b07a8eff64c8c94b20fd06277
+  governing_sop: PHASE_COMPLETION_SOP.md
+retry:
+  starting_commit: f789de29a8b5918cfd2dadf12107707421b8159d
+  ending_commit: fa7dfa91a656bb17acc2957413c1f3bb94613c84
+  restart_performed: false
+  runtime_code_modified: false
+  prior_test_evidence_reused: true
+  classification:
+    build_required: DONE
+    host_acceptance: PENDING
+    publication: PENDING
+    human_decision: PENDING
+  final_disposition: PHASE0_COMPLETION_PASS
+  build_status: PASS
+  host_acceptance_status: PENDING
+  publication_status: PENDING
+  human_decision_status: PENDING
+host_capabilities_reported:
+  git: AVAILABLE
+  python: "AVAILABLE: 3.13.5"
+  opencode: UNAVAILABLE
+  firefox: UNAVAILABLE
+  notify_send: UNAVAILABLE
+  crontab: UNAVAILABLE
+  systemd_user: "UNAVAILABLE/OFFLINE"
+  display: "PRESENT: :0; insufficient for graphical acceptance"
+pending_external_acceptance:
+  - real OpenCode installed-contract verification
+  - induced OpenCode deny-all/tool-denial proof
+  - Firefox graphical-session smoke
+  - user-session notifier smoke
+  - safe destination-host crontab round-trip fixture
+  - authenticated repository creation and push
+  - human project-license decision
+evidence:
+  verified_hub:
+    - PHASE_COMPLETION_SOP.md is live on Builder Hub main
+    - completion classification matches the live SOP
+    - Builder Hub framework-fix commits exist in remote history
+  reported_local:
+    - Don-Dawg baseline/result/retry commit identities
+    - 23/23 regression pass
+    - 15 major checks pass, 0 fail
+    - clean Don-Dawg retry worktree
+    - no Phase-0 runtime code changed during retry
+  pending_external:
+    - independent read-back of unpublished Don-Dawg retry commit
+    - destination-host acceptance checks
+    - publication and remote HEAD verification
+lessons_promoted:
+  - missing execution environment is not missing implementation
+  - build, host acceptance, publication, and human decisions are separate status dimensions
+  - flattened/reconstructed artifacts must preserve semantically significant executable mode/file type in addition to content hashes

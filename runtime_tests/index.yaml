@@ -1,0 +1,16 @@
+schema_version: "1.0"
+records:
+  - id: RT-001
+    slug: don-dawg-phase0
+    project: Don-Dawg
+    phase: phase_0
+    date: "2026-09-26"
+    status: PASS
+    path: runtime_tests/RT-001-don-dawg-phase0/
+    build_status: PASS
+    host_acceptance_status: PENDING
+    publication_status: PENDING
+    human_decision_status: PENDING
+    initial_disposition: PHASE0_COMPLETION_PARTIAL
+    final_disposition: PHASE0_COMPLETION_PASS
+    framework_finding: artifact-mode-and-external-blocker-classification
