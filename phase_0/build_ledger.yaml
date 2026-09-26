@@ -1,0 +1,48 @@
+schema_version: "1.0.0"
+phase: phase_0
+status: planned
+
+identity:
+  hub_repository: "https://github.com/es-3581100/llm-builder-hub.git"
+  expected_hub_commit: null
+  observed_hub_commit: null
+  prompt_pack_sha256: null
+  builder_prompt_sha256: null
+  source_mode: null
+  source_git_url: null
+  base_source_commit_sha: null
+  source_archive_sha256: null
+  local_baseline_commit_sha: null
+
+builder:
+  provider: opencode
+  model: opencode/space-bunny-free
+  variant: max
+  agent: null
+  auto_approve: false
+
+execution:
+  started_at: null
+  completed_at: null
+  opencode_version: null
+  command_help_sha256: null
+  exit_code: null
+  unexpected_conditions: []
+
+result:
+  commit: null
+  working_tree: unknown
+  changed_files: []
+  verification_commands: []
+  verification_status: pending
+  generated_artifacts: []
+  known_failures: []
+  unresolved_issues: []
+  scope_deviations: []
+
+audit:
+  status: pending
+  audited_commit: null
+  auditor: GPT/browser
+  findings: []
+  next_action: null

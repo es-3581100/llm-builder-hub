@@ -1,0 +1,11 @@
+schema_version: "1.0.0"
+source_name: REPLACE_ME
+source_mode: git
+source_git_url: REPLACE_ME
+base_source_commit_sha: REPLACE_ME
+source_archive_path: NONE
+source_archive_sha256: NONE
+builder_prompt_path: prompts/builder.md
+builder_prompt_sha256: ae39fefef6fdeca86510b8661f23b03e7ab12faa0e0aa58f83c93f78075ee81f
+model: opencode/space-bunny-free
+variant: max
