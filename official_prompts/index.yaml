@@ -1,0 +1,21 @@
+schema_version: "1.0"
+status: official
+governing_completion_sop: ../PHASE_COMPLETION_SOP.md
+prompts:
+  - id: OFFICIAL-001
+    file: 01-phase0-artifact-completion.md
+    title: Phase-0 Artifact Completion and Project Publish
+    purpose: artifact-to-verified-build-dev completion
+  - id: OFFICIAL-002
+    file: 02-controlled-merge.md
+    title: Controlled Merge of an Existing Build / App
+    purpose: reconcile an incoming implementation into an existing target without blind replacement
+  - id: OFFICIAL-003
+    file: 03-project-graduation.md
+    title: Build-Dev to Official Project Graduation
+    purpose: promote a verified build-dev repository into its official local and remote project identity
+excluded_from_official_set:
+  - retry / continuation prompts
+notes:
+  - Official prompts are versioned in Git.
+  - PHASE_COMPLETION_SOP.md governs completion-status classification when older wording conflicts.

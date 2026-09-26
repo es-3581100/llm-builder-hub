@@ -8,6 +8,8 @@ Phase completion, host-acceptance, publication, and human-decision handling are 
 
 Real execution records are indexed under [`runtime_tests/`](./runtime_tests/). The first recorded run is **RT-001 — Don-Dawg Phase-0**.
 
+The three canonical lifecycle prompts are versioned under [`official_prompts/`](./official_prompts/).
+
 Core invariant:
 
 > GPT designs → Git records → OpenCode executes → Git records → GPT audits.
