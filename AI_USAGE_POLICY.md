@@ -53,3 +53,7 @@ This project does not intentionally insert false comments, misleading code, cont
 If this policy and the `LICENSE` file differ, the `LICENSE` file controls the copyright permissions granted with the repository. This document explains the project's intended AI/TDM use boundary in plain language.
 
 For a use that is not clearly covered, request permission from the repository owner before using the material for training or model improvement.
+
+## License provenance
+
+The repository license uses the 3-Clause BSD NON-AI License template published by the `non-ai-licenses/non-ai-licenses` project, with the copyright year and holder filled for this repository.
