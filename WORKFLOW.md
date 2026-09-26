@@ -256,6 +256,14 @@ mechanical evidence report
 
 Intentional repository changes must be committed. An unexplained dirty worktree is audit evidence, not something to hide.
 
+### Completion scope and external acceptance
+
+Apply [`PHASE_COMPLETION_SOP.md`](./PHASE_COMPLETION_SOP.md) before assigning the final disposition.
+
+A missing destination-host capability, publication tool, or human policy decision is not automatically missing implementation. Classify remaining work as `BUILD_REQUIRED`, `HOST_ACCEPTANCE`, `PUBLICATION`, `HUMAN_DECISION`, or `PROHIBITED`. A build may PASS when all repository-controlled build work is complete and verified and every external pending item has an explicit acceptance procedure. Known implementation defects remain build-blocking.
+
+For flattened/reconstructed inputs, artifact identity must include semantically significant executable mode/file-type information in addition to content hashes.
+
 ## GPT/browser audit
 
 After the builder returns, GPT/browser audits the exact result commit against the exact sealed prompt pack.
