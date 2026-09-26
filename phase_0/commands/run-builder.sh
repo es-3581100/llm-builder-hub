@@ -45,8 +45,7 @@ if (( auto_mode == 1 )); then
 fi
 
 help_sha="$(sha256sum "$help_file" | awk '{print $1}')"
-info "opencode_version=$(tr '
-' ' ' < "$version_file" | sed 's/[[:space:]]+$//')"
+info "opencode_version=$(tr '\n' ' ' < "$version_file" | sed 's/[[:space:]]\+$//')"
 info "opencode_run_help_sha256=$help_sha"
 
 cmd=(opencode run --model "$model" --dir "$BUILD_DIR")
@@ -66,21 +65,12 @@ set -e
 completed="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 {
-  printf 'started_at=%s
-' "$started"
-  printf 'completed_at=%s
-' "$completed"
-  printf 'exit_code=%s
-' "$rc"
-  printf 'opencode_version=%s
-' "$(tr '
-' ' ' < "$version_file" | sed 's/[[:space:]]+$//')"
-  printf 'opencode_run_help_sha256=%s
-' "$help_sha"
-  printf 'model=%s
-variant=%s
-auto_approve=%s
-' "$model" "$variant" "$auto_mode"
+  printf 'started_at=%s\n' "$started"
+  printf 'completed_at=%s\n' "$completed"
+  printf 'exit_code=%s\n' "$rc"
+  printf 'opencode_version=%s\n' "$(tr '\n' ' ' < "$version_file" | sed 's/[[:space:]]\+$//')"
+  printf 'opencode_run_help_sha256=%s\n' "$help_sha"
+  printf 'model=%s\nvariant=%s\nauto_approve=%s\n' "$model" "$variant" "$auto_mode"
 } > "$PHASE_DIR/runtime/execution.env"
 
 "$COMMAND_DIR/collect-build-evidence.sh" >/dev/null || true

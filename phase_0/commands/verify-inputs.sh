@@ -58,15 +58,9 @@ esac
 source_dirty="$(git -C "$BUILD_DIR" status --porcelain)"
 [[ -z "$source_dirty" ]] || fail "source working tree is not clean before build"
 
-printf 'IDENTITY_CHECK=PASS
-'
-printf 'HUB_COMMIT_SHA=%s
-' "$observed_hub"
-printf 'PROMPT_PACK_SHA256=%s
-' "$observed_pack"
-printf 'BUILDER_PROMPT_SHA256=%s
-' "$observed_prompt"
-printf 'SOURCE_MODE=%s
-' "$source_mode"
-printf 'LOCAL_BASELINE_COMMIT_SHA=%s
-' "$(git -C "$BUILD_DIR" rev-parse HEAD)"
+printf 'IDENTITY_CHECK=PASS\n'
+printf 'HUB_COMMIT_SHA=%s\n' "$observed_hub"
+printf 'PROMPT_PACK_SHA256=%s\n' "$observed_pack"
+printf 'BUILDER_PROMPT_SHA256=%s\n' "$observed_prompt"
+printf 'SOURCE_MODE=%s\n' "$source_mode"
+printf 'LOCAL_BASELINE_COMMIT_SHA=%s\n' "$(git -C "$BUILD_DIR" rev-parse HEAD)"
