@@ -4,7 +4,7 @@ The canonical human + agent workflow artifact is [`index.html`](./index.html).
 
 Phase 0 bootstrap files live under [`phase_0/`](./phase_0/).
 
-Phase completion, host-acceptance, publication, and human-decision handling are defined in [`PHASE_COMPLETION_SOP.md`](./PHASE_COMPLETION_SOP.md).
+The Hub/project responsibility boundary is defined in [`HUB_BOUNDARY.md`](./HUB_BOUNDARY.md). Phase completion, host-acceptance, publication, and human-decision handling are defined in [`PHASE_COMPLETION_SOP.md`](./PHASE_COMPLETION_SOP.md).
 
 Real execution records are indexed under [`runtime_tests/`](./runtime_tests/). The first recorded run is **RT-001 — Don-Dawg Phase-0**.
 
@@ -13,6 +13,10 @@ The three canonical lifecycle prompts are versioned under [`official_prompts/`](
 Core invariant:
 
 > GPT designs → Git records → OpenCode executes → Git records → GPT audits.
+
+Boundary invariant:
+
+> The Hub transports intent without owning project-specific intent. Project architecture remains payload.
 
 Do not treat conversational memory as build state.
 

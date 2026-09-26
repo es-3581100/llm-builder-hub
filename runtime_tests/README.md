@@ -18,6 +18,8 @@ runtime_tests/
 
 Runtime tests are not examples or synthetic fixtures. They record what happened when the Builder Hub workflow was exercised against a real project/build surface.
 
+A runtime test may promote a lesson into Hub policy only when that lesson concerns the reusable handoff/lifecycle contract. Project-specific architecture discovered during a run remains project-local payload. See [`HUB_BOUNDARY.md`](../HUB_BOUNDARY.md).
+
 A record should preserve:
 
 - runtime-test ID;

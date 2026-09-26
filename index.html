@@ -35,6 +35,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted)}
 <div class="group">Start</div>
 <a href="#overview">Overview</a>
 <a href="#flow">Primary flow</a>
+<a href="#boundary">Hub boundary</a>
 <a href="#status">Status / TODOs</a>
 <div class="group">Contract</div>
 <a href="#identity">Identity</a>
@@ -57,8 +58,8 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted)}
 <div class="grid">
 <div class="card third"><div class="muted">CORE INVARIANT</div><div class="kpi">5 steps</div><div class="good">GPT → Git → OpenCode → Git → GPT</div></div>
 <div class="card third"><div class="muted">SEALED PACK</div><div class="kpi">12 files</div><div class="good">deterministic SHA-256 manifest</div></div>
-<div class="card third"><div class="muted">CURRENT STATE</div><div class="kpi">Phase 0</div><div class="warn">bootstrap published; real loop pending</div></div>
-<div class="card full callout"><b>Rule:</b> important state must not exist only inside an LLM conversation. Prompts, source identity, execution evidence, result commits, and audit disposition belong in Git or explicit runtime evidence.</div>
+<div class="card third"><div class="muted">CURRENT STATE</div><div class="kpi">RT-001</div><div class="good">first real runtime test recorded</div></div>
+<div class="card full callout"><b>Rule:</b> important state must not exist only inside an LLM conversation. Prompts, source identity, execution evidence, result commits, and audit disposition belong in Git or explicit runtime evidence.</div><div class="card full callout"><b>Boundary:</b> the Hub transports intent without owning project-specific intent. Application architecture, domain types, feature plans, and project-specific tool rules remain payload.</div>
 </div>
 </section>
 
@@ -84,6 +85,28 @@ next bounded phase</pre>
 <p>GPT designs scope and evidence requirements. Git records identity and history. OpenCode executes only after the identity gate passes. GPT audits the committed result rather than trusting the worker's prose summary.</p>
 </section>
 
+<section id="boundary">
+<h2>Hub boundary — chain of custody, not project architecture</h2>
+<div class="grid">
+<div class="card"><h3>Hub owns</h3><pre>source/task/pack identity
+checksums + handoff verification
+generic execution boundary
+executor/result evidence
+Git result identity
+audit disposition
+lifecycle + runtime-test records</pre></div>
+<div class="card"><h3>Project payload owns</h3><pre>languages / frameworks
+domain types + invariants
+feature decomposition
+project-specific tests
+project-specific tool allowlists
+application architecture
+next implementation stage</pre></div>
+<div class="card full callout"><b>Payload-opaque rule:</b> a project-specific instruction does not become Builder Hub architecture merely because the Hub transported it. If a rule stops making sense when the project is replaced with an unrelated project, keep it in the payload unless runtime evidence proves it is a reusable handoff rule.</div>
+</div>
+<p>See <a href="HUB_BOUNDARY.md">HUB_BOUNDARY.md</a>. Short form: <b>the Hub transports intent without owning intent.</b></p>
+</section>
+
 <section id="status">
 <h2>Status / TODO disposition</h2>
 <div class="card full">
@@ -99,7 +122,7 @@ next bounded phase</pre>
 <tr><td>OpenCode runner</td><td><span class="status done">DONE</span></td><td><a href="phase_0/commands/run-builder.sh">run-builder.sh</a></td></tr>
 <tr><td>Commit/report requirements</td><td><span class="status done">DONE</span></td><td>Builder + evidence collector + audit contract</td></tr>
 <tr><td>GPT post-build audit procedure</td><td><span class="status done">DONE</span></td><td><a href="phase_0/audit/post-build-audit.md">post-build-audit.md</a></td></tr>
-<tr><td>Real small-repository OpenCode loop</td><td><span class="status open">OPEN</span></td><td>Run on the machine with the installed OpenCode binary, audit exact result commit, then update ledger.</td></tr>
+<tr><td>First real runtime test</td><td><span class="status done">DONE</span></td><td><a href="runtime_tests/RT-001-don-dawg-phase0/">RT-001 — Don-Dawg Phase-0</a>; local/external evidence remains classified separately.</td></tr>
 </tbody>
 </table>
 </div>

@@ -28,6 +28,8 @@ verified build-dev project
 
 The non-official retry/continuation prompt is intentionally **not** part of this set.
 
+These prompts govern **lifecycle transitions**, not application architecture. Project-specific implementation plans, language choices, domain types, test commands, and per-project execution allowlists remain payload. See [`HUB_BOUNDARY.md`](../HUB_BOUNDARY.md).
+
 ## Governing policy
 
 [`PHASE_COMPLETION_SOP.md`](../PHASE_COMPLETION_SOP.md) governs build/host-acceptance/publication/human-decision status classification.

@@ -54,6 +54,38 @@ Important state must not exist only inside model conversation context.
 
 **build_ledger** is the persistent phase state machine.
 
+## Hub boundary: project semantics are payload
+
+Read [`HUB_BOUNDARY.md`](./HUB_BOUNDARY.md) as a governing companion contract.
+
+The Hub owns chain of custody, not project architecture.
+
+```text
+HUB OWNS
+source/task/pack identity
+handoff verification
+generic execution boundary
+executor/result evidence
+audit disposition
+lifecycle records
+
+PROJECT PAYLOAD OWNS
+language/framework choices
+domain types and invariants
+feature/phase implementation contents
+project-specific test commands
+project-specific tool allowlists
+project-specific next stage
+```
+
+A project-specific instruction does not become Hub architecture merely because the Hub transported it.
+
+The practical rule is:
+
+> The Hub transports intent without owning intent.
+
+If replacing the current project with an unrelated project would make a proposed Hub rule meaningless, keep that rule in the project payload unless independent runtime evidence shows it is a reusable handoff rule.
+
 ## Repository standard
 
 ```text
