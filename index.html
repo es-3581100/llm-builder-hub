@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rick's LLM Builder Hub</title>
+<meta name="description" content="Indexed human + agent workflow contract for bounded GPT → GitHub → OpenCode → GitHub → GPT software builds.">
+<style>
+:root{color-scheme:dark;--bg:#0a0d10;--panel:#11171c;--panel2:#0d1317;--line:#28323a;--text:#e3edf2;--muted:#8da0ad;--cyan:#6de1e8;--blue:#8cb4ff;--green:#58d68d;--amber:#f2c14e;--red:#ff7474;--code:#d6f6df}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.58 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+a{color:var(--blue)}code,pre{font:inherit}header{position:sticky;top:0;z-index:10;background:rgba(10,13,16,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{max-width:1500px;margin:auto;padding:13px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}.brand{font-weight:850}.brand b{color:var(--cyan)}.pills{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:3px 8px;color:var(--muted)}.pill.good{color:var(--green);border-color:#295f43}.pill.warn{color:var(--amber);border-color:#6f5925}
+.layout{max-width:1500px;margin:auto;display:grid;grid-template-columns:235px minmax(0,1fr)}nav{position:sticky;top:59px;height:calc(100vh - 59px);overflow:auto;border-right:1px solid var(--line);padding:18px 12px}
+nav a{display:block;text-decoration:none;color:var(--muted);padding:6px 8px;border-radius:6px}nav a:hover{background:#131a20;color:var(--text)}nav .group{margin:15px 8px 5px;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#60717c}
+main{padding:28px 30px 80px;min-width:0}section{scroll-margin-top:82px;margin-bottom:36px}h1{font-size:29px;margin:0 0 7px}h2{font-size:19px;margin:0 0 14px}h3{font-size:14px;margin:0 0 9px}.lede{max-width:980px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:13px}.card{grid-column:span 6;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:15px}.full{grid-column:1/-1}.third{grid-column:span 4}
+.kpi{font-size:23px;font-weight:850}.muted{color:var(--muted)}.good{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+pre{white-space:pre-wrap;word-break:break-word;background:#080c0f;border:1px solid var(--line);border-radius:8px;padding:12px;color:var(--code);overflow:auto}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:9px 8px}th{color:#a8b7c0}.status{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:2px 6px;white-space:nowrap}.done{color:var(--green)}.open{color:var(--amber)}
+.callout{border-left:3px solid var(--cyan);padding:10px 12px;background:#0c1418}.danger{border-left-color:var(--red)}details{border-top:1px solid var(--line);padding:10px 0}summary{cursor:pointer;color:var(--blue)}
+footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted)}
+@media(max-width:900px){.layout{grid-template-columns:1fr}nav{display:none}main{padding:20px 14px 60px}.card,.third{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+<div class="brand"><b>Rick's LLM Builder Hub</b> / indexed workflow</div>
+<div class="pills"><span class="pill good">repo: public</span><span class="pill good">phase 0: published</span><span class="pill warn">real OpenCode acceptance: pending</span></div>
+</div></header>
+
+<div class="layout">
+<nav aria-label="Index">
+<div class="group">Start</div>
+<a href="#overview">Overview</a>
+<a href="#flow">Primary flow</a>
+<a href="#status">Status / TODOs</a>
+<div class="group">Contract</div>
+<a href="#identity">Identity</a>
+<a href="#pack">Prompt pack</a>
+<a href="#execution">OpenCode execution</a>
+<a href="#completion">Completion</a>
+<a href="#audit">Audit loop</a>
+<a href="#security">Trust / security</a>
+<div class="group">Operate</div>
+<a href="#golden">Golden path</a>
+<a href="#files">File index</a>
+<a href="#machine">Agent contract</a>
+</nav>
+
+<main>
+<section id="overview">
+<h1>Bounded software builds with exact handoffs</h1>
+<p class="lede">This repository is the continuity layer between GPT/browser planning, GitHub revision identity, local OpenCode execution, committed evidence, and GPT/browser audit. The human-readable page and the agent-readable contract describe the same workflow.</p>
+<div class="grid">
+<div class="card third"><div class="muted">CORE INVARIANT</div><div class="kpi">5 steps</div><div class="good">GPT → Git → OpenCode → Git → GPT</div></div>
+<div class="card third"><div class="muted">SEALED PACK</div><div class="kpi">12 files</div><div class="good">deterministic SHA-256 manifest</div></div>
+<div class="card third"><div class="muted">CURRENT STATE</div><div class="kpi">Phase 0</div><div class="warn">bootstrap published; real loop pending</div></div>
+<div class="card full callout"><b>Rule:</b> important state must not exist only inside an LLM conversation. Prompts, source identity, execution evidence, result commits, and audit disposition belong in Git or explicit runtime evidence.</div>
+</div>
+</section>
+
+<section id="flow">
+<h2>Primary flow</h2>
+<pre>GPT/browser
+    ↓ design next bounded phase + sealed prompt pack
+GitHub builder hub
+    ↓ exact hub commit + prompt-pack digest
+local identity gate
+    ↓ PASS only
+OpenCode
+    ↓ implementation + verification + commit
+source Git repository
+    ↓ result commit + mechanical evidence
+GitHub
+    ↓ exact committed state
+GPT/browser audit
+    ↓
+PASS / REPAIR / BLOCK
+    ↓
+next bounded phase</pre>
+<p>GPT designs scope and evidence requirements. Git records identity and history. OpenCode executes only after the identity gate passes. GPT audits the committed result rather than trusting the worker's prose summary.</p>
+</section>
+
+<section id="status">
+<h2>Status / TODO disposition</h2>
+<div class="card full">
+<table>
+<thead><tr><th>Item</th><th>Status</th><th>Evidence / next action</th></tr></thead>
+<tbody>
+<tr><td>GitHub repository</td><td><span class="status done">DONE</span></td><td><a href="https://github.com/es-3581100/llm-builder-hub">es-3581100/llm-builder-hub</a></td></tr>
+<tr><td>End-to-end workflow contract</td><td><span class="status done">DONE</span></td><td><a href="WORKFLOW.md">WORKFLOW.md</a></td></tr>
+<tr><td>Build ledger schema</td><td><span class="status done">DONE</span></td><td><a href="phase_0/schemas/build-ledger.schema.json">JSON Schema</a></td></tr>
+<tr><td>Prompt-pack standard</td><td><span class="status done">DONE</span></td><td><a href="phase_0/">phase_0/</a></td></tr>
+<tr><td>Workspace preparation</td><td><span class="status done">DONE</span></td><td><a href="phase_0/commands/prepare-workspace.sh">prepare-workspace.sh</a></td></tr>
+<tr><td>Identity verification</td><td><span class="status done">DONE</span></td><td><a href="phase_0/commands/verify-inputs.sh">verify-inputs.sh</a></td></tr>
+<tr><td>OpenCode runner</td><td><span class="status done">DONE</span></td><td><a href="phase_0/commands/run-builder.sh">run-builder.sh</a></td></tr>
+<tr><td>Commit/report requirements</td><td><span class="status done">DONE</span></td><td>Builder + evidence collector + audit contract</td></tr>
+<tr><td>GPT post-build audit procedure</td><td><span class="status done">DONE</span></td><td><a href="phase_0/audit/post-build-audit.md">post-build-audit.md</a></td></tr>
+<tr><td>Real small-repository OpenCode loop</td><td><span class="status open">OPEN</span></td><td>Run on the machine with the installed OpenCode binary, audit exact result commit, then update ledger.</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="identity">
+<h2>Identity model</h2>
+<div class="grid">
+<div class="card"><h3>Every build resolves</h3><pre>EXPECTED_HUB_COMMIT
+OBSERVED_HUB_COMMIT
+PROMPT_PACK_SHA256
+BUILDER_PROMPT_SHA256
+SOURCE_MODE
+BASE_SOURCE_COMMIT_SHA
+SOURCE_ARCHIVE_SHA256
+LOCAL_BASELINE_COMMIT_SHA
+RESULT_COMMIT_SHA
+OPENCODE_VERSION
+OPENCODE_RUN_HELP_SHA256</pre></div>
+<div class="card"><h3>Non-circular rule</h3><p>A commit cannot contain its own final SHA and a hash manifest cannot recursively hash itself. Therefore the expected hub commit is supplied in the external execution handoff, while the prompt-pack digest is:</p><pre>sha256(phase_N/manifests/pack.files.sha256)</pre><p>The manifest covers immutable inputs but excludes itself, its digest file, the mutable ledger, reports, and runtime evidence.</p></div>
+</div>
+</section>
+
+<section id="pack">
+<h2>Prompt-pack standard</h2>
+<pre>phase_0/
+├── build_ledger.yaml
+├── prompts/
+│   ├── builder.md
+│   └── verifier.md
+├── manifests/
+│   ├── build-inputs.yaml
+│   ├── pack.files.sha256
+│   └── PROMPT_PACK_SHA256.txt
+├── commands/
+│   ├── common.sh
+│   ├── normalize-input.sh
+│   ├── seal-pack.sh
+│   ├── prepare-workspace.sh
+│   ├── verify-inputs.sh
+│   ├── run-builder.sh
+│   └── collect-build-evidence.sh
+├── schemas/
+│   └── build-ledger.schema.json
+└── audit/
+    └── post-build-audit.md</pre>
+<p>The sealed identity currently published for the bootstrap is <code>68823bfaf9a5b8acd9bcc59ab24c724fe0c233cd03661b7f3ab778bd9a0f7d89</code>.</p>
+</section>
+
+<section id="execution">
+<h2>OpenCode execution contract</h2>
+<div class="grid">
+<div class="card"><h3>Freshness gate</h3><p>The installed binary is the execution syntax authority. The runner captures:</p><pre>opencode --version
+opencode run --help</pre><p>It verifies required flags before execution and hashes the exact help snapshot for audit.</p></div>
+<div class="card"><h3>Approval boundary</h3><p><code>--auto</code> is deliberately not silent. The wrapper only adds it when the human explicitly invokes the wrapper with <code>--auto</code>.</p><pre>./phase_0/commands/run-builder.sh \
+  "$EXPECTED_HUB_COMMIT" \
+  "$EXPECTED_PROMPT_PACK_SHA256" \
+  --auto</pre></div>
+</div>
+</section>
+
+<section id="completion">
+<h2>Completion contract</h2>
+<p>OpenCode exiting successfully is not sufficient. A completed build needs committed evidence for:</p>
+<pre>result commit SHA
+clean / dirty working tree
+files changed
+build + verification commands
+verification results
+known failures
+unresolved issues
+scope deviations
+generated artifacts
+OpenCode version
+exact run-help hash
+OpenCode transcript
+mechanical Git evidence</pre>
+<p>Intentional repository changes must be committed. Unexplained residue is audit evidence, not something to hide.</p>
+</section>
+
+<section id="audit">
+<h2>GPT/browser audit loop</h2>
+<pre>inspect exact result commit
+↓
+re-open exact sealed builder prompt
+↓
+compare required work with repository evidence
+↓
+inspect tests + runtime/mechanical evidence
+↓
+check scope + dirty residue + unresolved failures
+↓
+PASS / REPAIR / BLOCK
+↓
+write audit into build_ledger.yaml</pre>
+<p><b>PASS</b> means required work is supported by committed evidence. <b>REPAIR</b> means a bounded repair phase can address defects. <b>BLOCK</b> means provenance/evidence is broken or continuing would require guessing.</p>
+</section>
+
+<section id="security">
+<h2>Trust / security boundary</h2>
+<div class="grid">
+<div class="card"><h3>SHA-256 proves</h3><p>Byte identity relative to a digest, corruption detection, and reproducibility.</p></div>
+<div class="card"><h3>SHA-256 does not prove</h3><p>Who authored the digest, that GitHub was never modified, or that a repository is trustworthy.</p></div>
+<div class="card full callout danger"><b>Hard stop:</b> credentials, API keys, private keys, tokens, sensitive <code>.env</code> contents, or other secrets must not enter prompt packs, commit-bound transcripts, or reports. If found, stop before commit.</div>
+</div>
+<p>Future hardening may add signed commits/tags, branch protection, release manifests, or CI attestations. Phase 0 does not require them.</p>
+</section>
+
+<section id="golden">
+<h2>Golden path</h2>
+<pre># 1. edit the phase
+$EDITOR phase_0/manifests/build-inputs.yaml
+$EDITOR phase_0/prompts/builder.md
+
+# 2. seal immutable inputs
+./phase_0/commands/seal-pack.sh
+
+# 3. commit + push hub phase
+git add index.html README.md WORKFLOW.md VERIFICATION.md phase_0
+git commit -m "phase0: seal bounded builder pack"
+git push
+
+# 4. external execution handoff
+EXPECTED_HUB_COMMIT="$(git rev-parse HEAD)"
+EXPECTED_PROMPT_PACK_SHA256="$(cut -d' ' -f1 phase_0/manifests/PROMPT_PACK_SHA256.txt)"
+
+# 5. prepare exact source
+./phase_0/commands/prepare-workspace.sh
+
+# 6. verify identity
+./phase_0/commands/verify-inputs.sh \
+  "$EXPECTED_HUB_COMMIT" \
+  "$EXPECTED_PROMPT_PACK_SHA256"
+
+# 7. execute
+./phase_0/commands/run-builder.sh \
+  "$EXPECTED_HUB_COMMIT" \
+  "$EXPECTED_PROMPT_PACK_SHA256" \
+  --auto
+
+# 8. audit exact result commit
+# 9. update build_ledger.yaml with PASS / REPAIR / BLOCK
+# 10. commit + push hub evidence</pre>
+</section>
+
+<section id="files">
+<h2>File index</h2>
+<div class="card full">
+<table><thead><tr><th>Artifact</th><th>Role</th></tr></thead><tbody>
+<tr><td><a href="README.md">README.md</a></td><td>short GitHub pointer</td></tr>
+<tr><td><a href="WORKFLOW.md">WORKFLOW.md</a></td><td>full prose workflow contract</td></tr>
+<tr><td><a href="VERIFICATION.md">VERIFICATION.md</a></td><td>bootstrap verification and remaining runtime boundary</td></tr>
+<tr><td><a href="phase_0/build_ledger.yaml">build_ledger.yaml</a></td><td>mutable phase continuity state</td></tr>
+<tr><td><a href="phase_0/prompts/builder.md">builder.md</a></td><td>bounded implementation prompt template</td></tr>
+<tr><td><a href="phase_0/prompts/verifier.md">verifier.md</a></td><td>evidence-first verification template</td></tr>
+<tr><td><a href="phase_0/manifests/build-inputs.yaml">build-inputs.yaml</a></td><td>source/model identity inputs</td></tr>
+<tr><td><a href="phase_0/manifests/pack.files.sha256">pack.files.sha256</a></td><td>sealed immutable-file hashes</td></tr>
+<tr><td><a href="phase_0/commands/prepare-workspace.sh">prepare-workspace.sh</a></td><td>guarded Git/archive source preparation</td></tr>
+<tr><td><a href="phase_0/commands/verify-inputs.sh">verify-inputs.sh</a></td><td>hard-stop identity gate</td></tr>
+<tr><td><a href="phase_0/commands/run-builder.sh">run-builder.sh</a></td><td>freshness-gated OpenCode runner</td></tr>
+<tr><td><a href="phase_0/commands/collect-build-evidence.sh">collect-build-evidence.sh</a></td><td>mechanical result evidence</td></tr>
+<tr><td><a href="phase_0/audit/post-build-audit.md">post-build-audit.md</a></td><td>GPT/browser audit procedure</td></tr>
+<tr><td><a href="phase_0/schemas/build-ledger.schema.json">build-ledger.schema.json</a></td><td>Phase-0 ledger schema</td></tr>
+</tbody></table>
+</div>
+</section>
+
+<section id="machine">
+<h2>Agent-facing contract</h2>
+<p class="muted">Agents should consume the JSON contract below rather than infer workflow state by scraping presentation text.</p>
+<pre>window.BuilderHubContract.data
+window.BuilderHubContract.getPhase("phase_0")
+window.BuilderHubContract.requiredEvidence</pre>
+<details><summary>Embedded contract preview</summary><pre id="contractPreview"></pre></details>
+</section>
+
+<footer>Workflow contract v0.1 · published 2026-09-26 · canonical repository: es-3581100/llm-builder-hub.</footer>
+</main>
+</div>
+
+<script type="application/json" id="builder-hub-contract">{
+  "schema_version":"0.1.0",
+  "name":"ricks-llm-builder-hub",
+  "repository":"https://github.com/es-3581100/llm-builder-hub.git",
+  "core_invariant":["GPT designs","Git records","OpenCode executes","Git records","GPT audits"],
+  "phase_states":["planned","sealed","running","built","audit_pending","passed","repair","blocked","abandoned"],
+  "identity_fields":["EXPECTED_HUB_COMMIT","OBSERVED_HUB_COMMIT","PROMPT_PACK_SHA256","BUILDER_PROMPT_SHA256","SOURCE_MODE","BASE_SOURCE_COMMIT_SHA","SOURCE_ARCHIVE_SHA256","LOCAL_BASELINE_COMMIT_SHA","RESULT_COMMIT_SHA","OPENCODE_VERSION","OPENCODE_RUN_HELP_SHA256"],
+  "prompt_pack_digest_definition":"sha256(phase_N/manifests/pack.files.sha256)",
+  "immutable_paths":["prompts/","commands/","schemas/","audit/","manifests/build-inputs.yaml"],
+  "mutable_evidence_paths":["build_ledger.yaml","reports/","runtime/"],
+  "hard_stops":["hub_commit_mismatch","dirty_hub_before_execution","pack_manifest_mismatch","pack_digest_mismatch","builder_prompt_hash_mismatch","source_identity_mismatch","dirty_source_before_build","required_opencode_flag_missing","secret_in_commit_bound_material"],
+  "required_evidence":["result_commit_sha","working_tree_state","files_changed","verification_commands","verification_results","known_failures","unresolved_issues","scope_deviations","generated_artifacts","opencode_version","opencode_run_help_sha256","opencode_transcript","mechanical_git_evidence"],
+  "audit_dispositions":["PASS","REPAIR","BLOCK"],
+  "phase_0":{
+    "ledger":"phase_0/build_ledger.yaml",
+    "builder_prompt":"phase_0/prompts/builder.md",
+    "verifier_prompt":"phase_0/prompts/verifier.md",
+    "inputs":"phase_0/manifests/build-inputs.yaml",
+    "pack_digest":"68823bfaf9a5b8acd9bcc59ab24c724fe0c233cd03661b7f3ab778bd9a0f7d89",
+    "seal":"phase_0/commands/seal-pack.sh",
+    "prepare":"phase_0/commands/prepare-workspace.sh",
+    "verify":"phase_0/commands/verify-inputs.sh",
+    "run":"phase_0/commands/run-builder.sh",
+    "collect":"phase_0/commands/collect-build-evidence.sh",
+    "audit":"phase_0/audit/post-build-audit.md",
+    "runtime_acceptance":"PENDING_REAL_OPENCODE_LOOP"
+  }
+}</script>
+<script>
+(()=>{const data=JSON.parse(document.getElementById('builder-hub-contract').textContent);window.BuilderHubContract={data,getPhase:id=>data[id],requiredEvidence:data.required_evidence};document.getElementById('contractPreview').textContent=JSON.stringify(data,null,2)})();
+</script>
+</body>
+</html>
