@@ -4,6 +4,8 @@ The canonical human + agent workflow artifact is [`index.html`](./index.html).
 
 Phase 0 bootstrap files live under [`phase_0/`](./phase_0/).
 
+Phase completion, host-acceptance, publication, and human-decision handling are defined in [`PHASE_COMPLETION_SOP.md`](./PHASE_COMPLETION_SOP.md).
+
 Core invariant:
 
 > GPT designs → Git records → OpenCode executes → Git records → GPT audits.
