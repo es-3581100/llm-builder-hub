@@ -97,11 +97,31 @@ if [[ "$READY" -ne 1 ]]; then
   exit 2
 fi
 
+set +e
 "$PYTHON" "$APP_DIR/scripts/phase3-browser-accept.py" \
   --url "$URL/" \
   --repo "$TEST_REPO" \
   --evidence-dir "$EVIDENCE_DIR" \
   --browser-executable "$BROWSER_EXECUTABLE"
+DRIVER_RC=$?
+set -e
+
+if [[ "$DRIVER_RC" -eq 2 ]]; then
+  {
+    echo "PHASE3_BUILD_GATES=PASS"
+    echo "PHASE3_AUTONOMOUS_HOST_ACCEPTANCE=BLOCKED"
+  } | tee "$EVIDENCE_DIR/RESULT.txt"
+  echo "Evidence: $EVIDENCE_DIR"
+  exit 2
+fi
+if [[ "$DRIVER_RC" -ne 0 ]]; then
+  {
+    echo "PHASE3_BUILD_GATES=PASS"
+    echo "PHASE3_AUTONOMOUS_HOST_ACCEPTANCE=FAIL"
+  } | tee "$EVIDENCE_DIR/RESULT.txt"
+  echo "Evidence: $EVIDENCE_DIR"
+  exit 1
+fi
 
 FINAL_INDEX_SHA="$(sha256sum "$TEST_REPO/.git/index" | awk '{print $1}')"
 [[ "$FINAL_INDEX_SHA" == "$INITIAL_INDEX_SHA" ]] || {
@@ -137,7 +157,7 @@ git -C "$TEST_REPO" diff --no-color --no-ext-diff --no-textconv -- >"$EVIDENCE_D
 git -C "$TEST_REPO" status --porcelain=v1 --untracked-files=all >"$EVIDENCE_DIR/final-status.txt"
 curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-final.json"
 
-python3 - "$EVIDENCE_DIR/browser-report.json" <<'PY'
+"$PYTHON" - "$EVIDENCE_DIR/browser-report.json" <<'PY'
 import json,sys
 report=json.load(open(sys.argv[1]))
 required=[

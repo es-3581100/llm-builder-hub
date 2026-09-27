@@ -183,7 +183,7 @@ def main():
             page.locator("#save-btn").click()
             page.wait_for_function(
                 """before => document.querySelector("#revision")?.textContent !== before""",
-                before_revision,
+                arg=before_revision,
             )
             if sha256(source) != before_source_sha or sha256(conflict) != before_conflict_sha:
                 raise AssertionError("SAVE CHANGES mutated repository source bytes")
