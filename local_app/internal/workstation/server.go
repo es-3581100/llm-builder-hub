@@ -208,6 +208,17 @@ func (s *Server) logWriteFile(status int, code, path string, result WriteFileRes
 }
 
 func (s *Server) writeRepositoryFile(w http.ResponseWriter, r *http.Request) {
+	s.executionMu.Lock()
+	if s.executionRunning {
+		s.executionMu.Unlock()
+		writeJSON(w, http.StatusConflict, writeFileErrorEnvelope{
+			Error: "source writes are blocked while local execution is running",
+			Code:  "EXECUTION_IN_PROGRESS",
+		})
+		return
+	}
+	defer s.executionMu.Unlock()
+
 	writer, ok := s.Repository.(RepositoryWriter)
 	if !ok || writer == nil {
 		writeJSON(w, http.StatusNotFound, writeFileErrorEnvelope{

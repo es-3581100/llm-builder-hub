@@ -44,3 +44,17 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .document[data-authority="repository"] button[data-action="write-file"]{border-color:#4f7b62;color:var(--good)}
 .document[data-authority="repository"] button[data-action="write-file"]:disabled{border-color:var(--line);color:var(--muted)}
 .source-write-error{border-top:1px solid #7f3d3d;background:#241012;color:var(--danger);padding:7px 10px;font-size:11px}
+
+.execution-panel{border:1px solid var(--line-strong);background:#0b1217;margin:0 0 12px;padding:9px 10px}
+.execution-panel>header{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:8px}
+.execution-panel>header strong{color:var(--accent)}#execution-state{margin-left:auto;color:var(--muted);font-size:11px}
+.execution-panel[data-running="true"] #execution-state{color:var(--warn)}
+.execution-panel[data-guard="blocked"] #execution-state{color:var(--danger)}
+.execution-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr;gap:8px}.execution-grid label,.execution-prompt-label{color:var(--muted);font-size:11px}
+.execution-grid input[type="text"],.execution-grid input[type="number"],#execution-prompt{display:block;width:100%;margin-top:4px;border:1px solid var(--line);background:#090f13;color:var(--text);padding:6px}
+.execution-auto{display:flex!important;gap:7px;align-items:center;margin-top:18px}.execution-auto input{margin:0}
+#execution-prompt{resize:vertical;min-height:7rem;line-height:1.45}
+.execution-actions{display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--muted);font-size:11px}
+#run-opencode-btn{border-color:#4f7b62;color:var(--good);font-weight:700}
+.execution-result{white-space:pre-wrap;overflow:auto;max-height:12rem;background:#080d11;border:1px solid #25323a;padding:7px;margin:8px 0 0;color:#cbd7de;font-size:11px}
+@media (max-width:899px){.execution-grid{grid-template-columns:1fr}.execution-auto{margin-top:0}}

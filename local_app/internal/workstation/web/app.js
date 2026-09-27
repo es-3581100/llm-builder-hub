@@ -30,6 +30,8 @@ let compact = false;
 let activeDocument = null;
 let editingDocument = null;
 let repositoryEdit = null;
+let executionRunning = false;
+let lastExecution = null;
 let activeTools = {workspace: 1, project: 1, branch: 1};
 let drawerState = "closed";
 let pendingRefresh = false;
@@ -42,6 +44,29 @@ function repositoryDraftDirty(edit) {
 
 function canStartRepositoryEdit(currentEdit, nextDocumentId) {
   return !repositoryDraftDirty(currentEdit) || currentEdit.documentId === nextDocumentId;
+}
+
+function executionGuard(repo, sourceEdit, running) {
+  if (running) return "EXECUTION ALREADY RUNNING";
+  if (!repo) return "NO REPOSITORY";
+  if (!repo.head_commit || repo.unborn) return "REPOSITORY HAS NO HEAD";
+  if (!repo.clean) return "REPOSITORY MUST BE CLEAN";
+  if (repositoryDraftDirty(sourceEdit)) return "SOURCE DRAFT MUST BE WRITTEN OR CANCELLED";
+  return "";
+}
+
+function makeExecutionRequest(repo, values) {
+  if (!repo) return null;
+  const timeout = Number(values.timeoutSeconds);
+  return {
+    repository_id: repo.repository_id,
+    expected_head_commit: repo.head_commit,
+    prompt: values.prompt,
+    model: values.model.trim(),
+    variant: values.variant.trim(),
+    auto_approve: !!values.autoApprove,
+    timeout_seconds: Number.isFinite(timeout) ? timeout : 0
+  };
 }
 
 function makeRepositoryWriteRequest(edit) {
@@ -76,6 +101,10 @@ async function loadAuthoritative() {
   repository = envelope.repository || null;
   stateHash = envelope.state_sha256;
   repositoryEdit = null;
+  try {
+    const runStatus = await fetch("/api/run-status", {cache:"no-store"});
+    if (runStatus.ok) executionRunning = !!(await runStatus.json()).running;
+  } catch (_) {}
   if (!activeDocument && draft.documents.length) activeDocument = draft.documents[0].id;
   renderAll();
 }
@@ -354,6 +383,79 @@ function showSourceError(err) {
   window.alert(err.message || String(err));
 }
 
+function executionFormValues() {
+  return {
+    prompt: document.getElementById("execution-prompt").value,
+    model: document.getElementById("execution-model").value,
+    variant: document.getElementById("execution-variant").value,
+    autoApprove: document.getElementById("execution-auto").checked,
+    timeoutSeconds: document.getElementById("execution-timeout").value
+  };
+}
+
+function renderExecution() {
+  const panel=document.getElementById("execution-panel");
+  if(!panel) return;
+  const guard=executionGuard(repository,repositoryEdit,executionRunning);
+  panel.dataset.running=String(executionRunning);
+  panel.dataset.guard=guard ? "blocked" : "ready";
+  const state=document.getElementById("execution-state");
+  state.textContent=executionRunning ? "RUNNING" : (guard || "READY");
+  const run=document.getElementById("run-opencode-btn");
+  run.disabled=!!guard;
+  const result=document.getElementById("execution-result");
+  if(lastExecution){
+    const lines=[
+      `status: ${lastExecution.status || "ERROR"}`,
+      lastExecution.code ? `code: ${lastExecution.code}` : "",
+      lastExecution.run_id ? `run: ${lastExecution.run_id}` : "",
+      lastExecution.prompt_sha256 ? `prompt sha256: ${lastExecution.prompt_sha256}` : "",
+      Number.isInteger(lastExecution.exit_code) ? `exit: ${lastExecution.exit_code}` : "",
+      lastExecution.evidence_dir ? `evidence: ${lastExecution.evidence_dir}` : "",
+      lastExecution.error ? `error: ${lastExecution.error}` : ""
+    ].filter(Boolean);
+    result.textContent=lines.join("\n");
+  } else {
+    result.textContent=executionRunning ? "OpenCode is running against the exact bound repository state." : "No execution result in this browser session.";
+  }
+}
+
+async function runExecution() {
+  const guard=executionGuard(repository,repositoryEdit,executionRunning);
+  if(guard){
+    window.alert(guard);
+    return;
+  }
+  const values=executionFormValues();
+  if(!values.prompt.trim() || !values.model.trim()){
+    window.alert("PROMPT and MODEL are required.");
+    return;
+  }
+  const request=makeExecutionRequest(repository,values);
+  executionRunning=true;
+  lastExecution=null;
+  renderExecution();
+  try{
+    const res=await fetch("/api/run",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(request)
+    });
+    if(!res.ok){
+      let body={code:"EXECUTION_FAILED",error:`RUN failed with HTTP ${res.status}`};
+      try{body=await res.json();}catch(_){}
+      lastExecution={status:"ERROR",code:body.code,error:body.error};
+      return;
+    }
+    const result=await res.json();
+    lastExecution=result;
+    repository=result.repository || repository;
+  }finally{
+    executionRunning=false;
+    renderAll();
+  }
+}
+
 function renderSpines() {
   for (const slider of draft.sliders) {
     const spine = document.querySelector(`[data-tool-spine="${slider.id}"]`);
@@ -497,6 +599,7 @@ function renderAll() {
   renderGeometry();
   renderMetadata();
   renderRepository();
+  renderExecution();
   syncProjectInputs();
   renderSpines();
   renderSliderViews();
@@ -529,6 +632,7 @@ function bind() {
   document.getElementById("save-btn").addEventListener("click",()=>saveChanges().catch(showError));
   document.getElementById("clear-btn").addEventListener("click",clearEdits);
   document.getElementById("refresh-btn").addEventListener("click",requestRefresh);
+  document.getElementById("run-opencode-btn").addEventListener("click",()=>runExecution().catch(showError));
   document.getElementById("settings-quick").addEventListener("click",()=>setDrawer(drawerState === "both" || drawerState === "system" ? "closed" : "both"));
   document.getElementById("documents-quick").addEventListener("click",()=>{setDepth(0);document.getElementById("workspace").focus?.();});
   document.getElementById("search-quick").addEventListener("click",()=>{setDepth(1);const s=draft.sliders[0];const tool=s.tools.find(x=>x.target==="search");if(tool){activeTools.workspace=tool.slot;renderSpines();renderSliderViews();}});
@@ -559,4 +663,4 @@ function bind() {
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded",()=>{bind();loadAuthoritative().catch(showError);});
 }
-if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick,repositoryDraftDirty,canStartRepositoryEdit,makeRepositoryWriteRequest};
+if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick,repositoryDraftDirty,canStartRepositoryEdit,executionGuard,makeExecutionRequest,makeRepositoryWriteRequest};

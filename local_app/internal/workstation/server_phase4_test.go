@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -215,5 +217,30 @@ func TestRunEndpointAllowsOnlyOneActiveExecution(t *testing.T) {
 	server.Handler().ServeHTTP(status, httptest.NewRequest(http.MethodGet, "/api/run-status", nil))
 	if status.Code != http.StatusOK || !strings.Contains(status.Body.String(), "\"running\":false") {
 		t.Fatalf("final run status=%d body=%s", status.Code, status.Body.String())
+	}
+}
+
+func TestWriteFileEndpointIsBlockedDuringExecution(t *testing.T) {
+	dir := initRepo(t, "repo")
+	repository := NewGitRepository(dir)
+	server := &Server{Store: newTestStore(t), Repository: repository}
+	server.executionRunning = true
+	rec := postWriteFile(t, server, writeRequestFor(t, repository, "alpha.txt", "draft\n"))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var body writeFileErrorEnvelope
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Code != "EXECUTION_IN_PROGRESS" {
+		t.Fatalf("code=%q", body.Code)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, "alpha.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "alpha\n" {
+		t.Fatalf("blocked write changed source bytes: %q", got)
 	}
 }

@@ -86,6 +86,23 @@
       <details><summary id="history-summary">Recent local history</summary><div id="repository-history"></div></details>
       <details><summary id="relationships-summary">Source relationships</summary><div id="source-relationships"></div></details>
     </section>
+    <section class="execution-panel" id="execution-panel" data-execution-surface="opencode" data-running="false" aria-label="Explicit local OpenCode execution">
+      <header><strong>LOCAL OPENCODE EXECUTION</strong><span id="execution-state">READY</span></header>
+      <div class="execution-grid">
+        <label>Model<input id="execution-model" type="text" value="opencode/space-bunny-free" autocomplete="off"></label>
+        <label>Variant<input id="execution-variant" type="text" value="max" autocomplete="off"></label>
+        <label>Timeout seconds<input id="execution-timeout" type="number" min="1" max="7200" value="1800"></label>
+        <label class="execution-auto"><input id="execution-auto" type="checkbox"> explicit --auto approval</label>
+      </div>
+      <label class="execution-prompt-label">Prompt
+        <textarea id="execution-prompt" rows="7" placeholder="Exact project payload to execute. This is not SAVE CHANGES and not WRITE FILE."></textarea>
+      </label>
+      <div class="execution-actions">
+        <button id="run-opencode-btn" data-action="run-opencode" type="button">RUN OPENCODE</button>
+        <span>Requires exact repository ID + HEAD and a clean Git worktree.</span>
+      </div>
+      <pre id="execution-result" class="execution-result">No execution result in this browser session.</pre>
+    </section>
     <section class="document-stream" id="document-stream" data-document-stream="true" aria-label="Ordered workstation and Git-backed documents"></section>
   </main>
 </div>
