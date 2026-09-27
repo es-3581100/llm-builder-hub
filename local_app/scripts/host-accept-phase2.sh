@@ -5,7 +5,7 @@ APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 BASELINE="ab7156dba65d0d6a2a7dd67a5502e5a701df3cdd"
 PORT="${PORT:-18765}"
 ADDR="127.0.0.1:${PORT}"
-URL="http://${ADDR}/"
+URL="http://${ADDR}"
 
 for cmd in git go curl python3 sha256sum; do
   command -v "$cmd" >/dev/null 2>&1 || { echo "HOST_ACCEPTANCE_BLOCKED: missing command: $cmd" >&2; exit 2; }
@@ -90,7 +90,14 @@ start_service() {
   "$BIN" -addr "$ADDR" -state "$STATE" -repo "$repo_path" >"$EVIDENCE_DIR/service.log" 2>&1 &
   SERVICE_PID=$!
   for _ in $(seq 1 80); do
-    if curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-current.json" 2>/dev/null; then return 0; fi
+    if curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-current.json" 2>/dev/null \
+      && python3 - "$EVIDENCE_DIR/state-current.json" >/dev/null 2>&1 <<'PY'
+import json,sys
+json.load(open(sys.argv[1]))
+PY
+    then
+      return 0
+    fi
     sleep 0.1
   done
   echo "HOST_ACCEPTANCE_BLOCKED: service did not become ready at $URL" >&2
@@ -136,7 +143,7 @@ REV_BEFORE="$(json_value "$EVIDENCE_DIR/state-normal-before.json" state.revision
   echo "EOF"
 } >"$EVIDENCE_DIR/acceptance.txt"
 
-"$BROWSER_CMD" "$URL" >/dev/null 2>&1 &
+"$BROWSER_CMD" "$URL/" >/dev/null 2>&1 &
 
 cat <<EOF
 
