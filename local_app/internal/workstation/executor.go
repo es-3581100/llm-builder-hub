@@ -126,6 +126,10 @@ func (OSExecutionCommandRunner) Run(ctx context.Context, name string, args []str
 	return ExecutionCommandResult{}, err
 }
 
+type ExecutionProvider interface {
+	Execute(context.Context, ExecutionRequest) (ExecutionResult, error)
+}
+
 type OpenCodeExecutor struct {
 	Repository      RepositoryProvider
 	Binary          string

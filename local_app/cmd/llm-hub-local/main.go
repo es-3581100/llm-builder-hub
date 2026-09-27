@@ -15,7 +15,8 @@ import (
 func main() {
 	addr := flag.String("addr", "127.0.0.1:8765", "local listen address")
 	statePath := flag.String("state", defaultStatePath(), "authoritative local workstation state file")
-	repoPath := flag.String("repo", ".", "real local Git repository to inspect read-only")
+	repoPath := flag.String("repo", ".", "real local Git repository to inspect and explicitly mutate")
+	executionEvidence := flag.String("execution-evidence", "", "directory for private OpenCode execution evidence (default: XDG state)")
 	flag.Parse()
 
 	store := workstation.NewStore(*statePath)
@@ -30,7 +31,8 @@ func main() {
 	}
 
 	logger := log.New(os.Stderr, "[llm-hub-local] ", log.LstdFlags)
-	server := &workstation.Server{Store: store, Repository: repository, Log: logger}
+	executor := workstation.NewOpenCodeExecutor(repository, *executionEvidence)
+	server := &workstation.Server{Store: store, Repository: repository, Executor: executor, Log: logger}
 	fmt.Printf("LLM-Hub local workstation\nAUTHORITY: LOCAL\nstate: %s\nrepository: %s\nrepository_id: %s\nhead: %s\nbranch: %s\nurl: http://%s/\n",
 		store.Path(),
 		repositorySnapshot.Root,
