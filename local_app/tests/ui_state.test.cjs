@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { columnsForDepth, statesEqual, shortcutMatches, repositoryDisplayBranch, shouldRerenderAfterDocumentClick, repositoryDraftDirty, canStartRepositoryEdit, makeRepositoryWriteRequest } = require('../internal/workstation/web/app.js');
+const { columnsForDepth, statesEqual, shortcutMatches, repositoryDisplayBranch, shouldRerenderAfterDocumentClick, repositoryDraftDirty, canStartRepositoryEdit, executionGuard, makeExecutionRequest, makeRepositoryWriteRequest } = require('../internal/workstation/web/app.js');
 
 test('desktop slider depth maps exactly 0:4 1:3 2:2 3:1', () => {
   assert.equal(columnsForDepth(0,false),4);
@@ -89,4 +89,28 @@ test('dirty repository source draft cannot be silently replaced by editing anoth
   dirty.content='before\n';
   assert.equal(canStartRepositoryEdit(dirty,'git-b'),true);
   assert.equal(canStartRepositoryEdit(null,'git-b'),true);
+});
+
+test('execution guard requires clean bound repository and no source draft', () => {
+  const repo={repository_id:'repo',head_commit:'abc',unborn:false,clean:true};
+  assert.equal(executionGuard(repo,null,false),'');
+  assert.equal(executionGuard(repo,null,true),'EXECUTION ALREADY RUNNING');
+  assert.equal(executionGuard({...repo,clean:false},null,false),'REPOSITORY MUST BE CLEAN');
+  assert.equal(executionGuard({...repo,head_commit:'',unborn:true},null,false),'REPOSITORY HAS NO HEAD');
+  assert.equal(executionGuard(repo,{originalContent:'a',content:'b'},false),'SOURCE DRAFT MUST BE WRITTEN OR CANCELLED');
+});
+
+test('execution request binds repository identity HEAD and explicit runtime controls', () => {
+  const repo={repository_id:'repo-1',head_commit:'deadbeef'};
+  assert.deepEqual(makeExecutionRequest(repo,{
+    prompt:'build\n',model:' model ',variant:' max ',autoApprove:true,timeoutSeconds:'90'
+  }),{
+    repository_id:'repo-1',
+    expected_head_commit:'deadbeef',
+    prompt:'build\n',
+    model:'model',
+    variant:'max',
+    auto_approve:true,
+    timeout_seconds:90
+  });
 });
