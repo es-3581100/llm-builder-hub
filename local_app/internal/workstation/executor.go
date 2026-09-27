@@ -59,6 +59,8 @@ type ExecutionResult struct {
 	OpenCodeVersion          string             `json:"opencode_version"`
 	OpenCodeRunHelpSHA256    string             `json:"opencode_run_help_sha256"`
 	TranscriptTruncated      bool               `json:"transcript_truncated"`
+	TimedOut                 bool               `json:"timed_out"`
+	Command                  []string           `json:"command"`
 	EvidenceDir              string             `json:"evidence_dir"`
 	FinalRepository          RepositorySnapshot `json:"repository"`
 }
@@ -267,8 +269,13 @@ func (e *OpenCodeExecutor) Execute(ctx context.Context, request ExecutionRequest
 	runCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 	runResult, transportErr := e.Runner.Run(runCtx, e.Binary, args, before.Root, env, e.TranscriptLimit)
+	timedOut := errors.Is(runCtx.Err(), context.DeadlineExceeded)
 	if transportErr != nil {
-		return ExecutionResult{}, fmt.Errorf("%w: %v", ErrExecutionTransport, transportErr)
+		if timedOut {
+			runResult = ExecutionCommandResult{Output: []byte("execution timed out\n"), ExitCode: -1}
+		} else {
+			return ExecutionResult{}, fmt.Errorf("%w: %v", ErrExecutionTransport, transportErr)
+		}
 	}
 	if err := writePrivateFile(filepath.Join(evidenceDir, "transcript.log"), runResult.Output); err != nil {
 		return ExecutionResult{}, err
@@ -281,7 +288,9 @@ func (e *OpenCodeExecutor) Execute(ctx context.Context, request ExecutionRequest
 	completed := e.Now().UTC()
 	helpSum := sha256.Sum256(helpResult.Output)
 	status := "PASS"
-	if runResult.ExitCode != 0 {
+	if timedOut {
+		status = "TIMEOUT"
+	} else if runResult.ExitCode != 0 {
 		status = "FAIL"
 	}
 	result := ExecutionResult{
@@ -299,8 +308,10 @@ func (e *OpenCodeExecutor) Execute(ctx context.Context, request ExecutionRequest
 		CompletedAt:           completed.Format(time.RFC3339Nano),
 		ExitCode:              runResult.ExitCode,
 		OpenCodeVersion:       strings.TrimSpace(string(versionResult.Output)),
-		OpenCodeRunHelpSHA256: contentSHA256(helpResult.Output),
+		OpenCodeRunHelpSHA256: hex.EncodeToString(helpSum[:]),
 		TranscriptTruncated:   runResult.Truncated,
+		TimedOut:              timedOut,
+		Command:               executionArgsForEvidence(request, before.Root),
 		EvidenceDir:           evidenceDir,
 		FinalRepository:       after,
 	}

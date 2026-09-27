@@ -238,3 +238,63 @@ func TestLimitedCaptureTruncatesWithoutShortWrites(t *testing.T) {
 		t.Fatalf("capture=%q truncated=%v", capture.data.String(), capture.truncated)
 	}
 }
+
+func TestExecutorRecordsSanitizedCommandWithoutPrompt(t *testing.T) {
+	dir := initRepo(t, "repo")
+	repository := NewGitRepository(dir)
+	executor := newScriptedExecutor(t, repository, successExecutionRunner())
+	request := executionRequestFor(t, repository, "secret-ish prompt body")
+	result, err := executor.Execute(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(result.Command, " ")
+	if strings.Contains(joined, request.Prompt) {
+		t.Fatalf("command evidence leaked prompt: %q", joined)
+	}
+	if !strings.Contains(joined, result.PromptSHA256) || !strings.Contains(joined, "bytes=22") {
+		t.Fatalf("command evidence missing prompt identity: %q", joined)
+	}
+}
+
+type timeoutExecutionRunner struct {
+	calls int
+}
+
+func (r *timeoutExecutionRunner) Run(ctx context.Context, _ string, _ []string, _ string, _ []string, _ int) (ExecutionCommandResult, error) {
+	r.calls++
+	switch r.calls {
+	case 1:
+		return ExecutionCommandResult{Output: []byte("opencode 1.2.3\n")}, nil
+	case 2:
+		return ExecutionCommandResult{Output: []byte("Usage: --model --dir\n")}, nil
+	default:
+		<-ctx.Done()
+		return ExecutionCommandResult{}, ctx.Err()
+	}
+}
+
+func TestExecutorRecordsTimeout(t *testing.T) {
+	dir := initRepo(t, "repo")
+	repository := NewGitRepository(dir)
+	runner := &timeoutExecutionRunner{}
+	executor := &OpenCodeExecutor{
+		Repository:      repository,
+		Binary:          "opencode",
+		EvidenceRoot:    filepath.Join(t.TempDir(), "evidence"),
+		Runner:          runner,
+		Now:             time.Now,
+		TranscriptLimit: 1024,
+	}
+	request := executionRequestFor(t, repository, "prompt")
+	request.Variant = ""
+	request.AutoApprove = false
+	request.TimeoutSeconds = 1
+	result, err := executor.Execute(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != "TIMEOUT" || !result.TimedOut || result.ExitCode != -1 {
+		t.Fatalf("timeout result=%+v", result)
+	}
+}
