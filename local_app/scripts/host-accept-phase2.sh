@@ -86,8 +86,9 @@ go build -o "$BIN" ./cmd/llm-hub-local
 start_service() {
   local repo_path="$1"
   if [[ -n "$SERVICE_PID" ]]; then kill "$SERVICE_PID" 2>/dev/null || true; wait "$SERVICE_PID" 2>/dev/null || true; fi
-  : >"$EVIDENCE_DIR/service.log"
-  "$BIN" -addr "$ADDR" -state "$STATE" -repo "$repo_path" >"$EVIDENCE_DIR/service.log" 2>&1 &
+  touch "$EVIDENCE_DIR/service.log"
+  printf '\n=== service_start utc=%s repo=%q ===\n' "$(date -u +%Y%m%dT%H%M%SZ)" "$repo_path" >>"$EVIDENCE_DIR/service.log"
+  "$BIN" -addr "$ADDR" -state "$STATE" -repo "$repo_path" >>"$EVIDENCE_DIR/service.log" 2>&1 &
   SERVICE_PID=$!
   for _ in $(seq 1 80); do
     if curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-current.json" 2>/dev/null \
@@ -161,6 +162,13 @@ Normal-state checks:
   4. Enter EDIT on a workstation document, modify it, and confirm UNSAVED EDITS.
   5. Click REFRESH while dirty; confirm the guard appears and CANCEL preserves the draft.
   6. CLEAR EDITS, edit again, then SAVE CHANGES.
+     Before answering the SAVE check below, paste this in DevTools:
+       copy(JSON.stringify({
+         save:     document.getElementById('save-state').textContent,
+         revision: document.getElementById('revision').textContent
+       }))
+     Expected after one successful save in this fresh run:
+       {"save":"SAVED","revision":"revision 2"}
   7. Confirm repository source documents remain read-only.
   8. Click EXPORT HTML5, open the download, and confirm STATIC PROJECTION / READ ONLY.
 
@@ -178,6 +186,8 @@ record_check browser_export "Did EXPORT HTML5 download and render as a read-only
 
 curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-normal-after.json"
 REV_AFTER="$(json_value "$EVIDENCE_DIR/state-normal-after.json" state.revision)"
+SAVE_LOG_LINE="$(grep 'POST /api/save' "$EVIDENCE_DIR/service.log" | tail -n 1 || true)"
+EXPECTED_SAVE_LOG="POST /api/save status=200 revision_before=$REV_BEFORE revision_after=$REV_AFTER"
 curl -fsS "$URL/api/export" >"$EVIDENCE_DIR/llm-hub-project.html"
 EXPORT_SHA="$(sha256sum "$EVIDENCE_DIR/llm-hub-project.html" | awk '{print $1}')"
 
@@ -189,15 +199,20 @@ INDEX_SHA_AFTER="$(sha256sum "$TEST_REPO/.git/index" | awk '{print $1}')"
 [[ "$STATUS_BEFORE" == "$STATUS_AFTER" ]] || PASS=0
 [[ "$INDEX_SHA_BEFORE" == "$INDEX_SHA_AFTER" ]] || PASS=0
 (( REV_AFTER > REV_BEFORE )) || PASS=0
+[[ -n "$SAVE_LOG_LINE" ]] || PASS=0
+grep -F "$EXPECTED_SAVE_LOG" "$EVIDENCE_DIR/service.log" >/dev/null || PASS=0
 
 git -C "$TEST_REPO" checkout --detach HEAD >/dev/null
 curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-detached-api.json"
 cat <<EOF
 
 DETACHED check:
-  Refresh the real browser page and confirm the branch/view label reads DETACHED.
+  Refresh the real browser page.
+  Read the always-visible #repository-branch element.
+  Confirm it reads exactly: branch: DETACHED
+  Ignore the hidden B-slider #branch-name element.
 EOF
-record_check browser_detached_label "Did the real browser render DETACHED after refreshing?" || PASS=0
+record_check browser_detached_label "Did #repository-branch render exactly 'branch: DETACHED' after refreshing?" || PASS=0
 
 UNBORN_REPO="$TMP/unborn repository"
 mkdir -p "$UNBORN_REPO"
@@ -215,6 +230,7 @@ record_check browser_unborn_label "Did the real browser render the unborn reposi
 {
   echo "revision_before_save=$REV_BEFORE"
   echo "revision_after_browser_steps=$REV_AFTER"
+  echo "save_request_log=$SAVE_LOG_LINE"
   echo "source_sha_after=$SOURCE_SHA_AFTER"
   echo "index_sha_after=$INDEX_SHA_AFTER"
   echo "export_sha256=$EXPORT_SHA"

@@ -59,7 +59,7 @@ CANCEL REFRESH preserves the draft
 CLEAR EDITS restores saved workstation state
 SAVE CHANGES succeeds
 repository-backed source documents remain read-only
-DETACHED label renders after a real Git detach + refresh
+#repository-branch renders exactly "branch: DETACHED" after a real Git detach + refresh
 UNBORN repository renders after a real service restart against a new Git repository
 EXPORT HTML5 downloads
 downloaded export renders as STATIC PROJECTION / READ ONLY
@@ -97,6 +97,7 @@ Expected evidence:
 acceptance.txt
 browser-checks.txt
 service.log
+  includes structured POST /api/save status + revision-before/after evidence
 state-normal-before.json
 state-normal-after.json
 state-detached-api.json
