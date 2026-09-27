@@ -29,6 +29,7 @@ type GitRepository struct {
 	root             string
 	maxDocuments     int
 	maxDocumentBytes int64
+	writeAtomic      func(string, []byte, os.FileMode) error
 }
 
 type GitChange struct {
@@ -63,6 +64,7 @@ type SourceFileRelationship struct {
 	StagedStatus     string `json:"staged_status,omitempty"`
 	UnstagedStatus   string `json:"unstaged_status,omitempty"`
 	ContentAuthority string `json:"content_authority,omitempty"`
+	ContentSHA256     string `json:"content_sha256,omitempty"`
 }
 
 type RepositoryDocument struct {
@@ -72,8 +74,9 @@ type RepositoryDocument struct {
 	Title        string `json:"title"`
 	Content      string `json:"content"`
 	Size         int64  `json:"size"`
-	RepositoryID string `json:"repository_id"`
-	Source       string `json:"source"`
+	RepositoryID  string `json:"repository_id"`
+	Source        string `json:"source"`
+	ContentSHA256 string `json:"content_sha256"`
 }
 
 type RepositorySnapshot struct {
@@ -107,6 +110,7 @@ func NewGitRepository(root string) *GitRepository {
 		root:             root,
 		maxDocuments:     defaultRepositoryDocumentLimit,
 		maxDocumentBytes: defaultRepositoryDocumentBytes,
+		writeAtomic:      atomicReplaceFile,
 	}
 }
 
@@ -316,6 +320,7 @@ func (r *GitRepository) loadFiles(ctx context.Context, commandRoot string, snaps
 		if err != nil {
 			return fmt.Errorf("read repository file %q: %w", relPath, err)
 		}
+		rel.ContentSHA256 = contentSHA256(content)
 		if !isTextContent(content) {
 			rel.Binary = true
 			snapshot.Files = append(snapshot.Files, rel)
@@ -335,8 +340,9 @@ func (r *GitRepository) loadFiles(ctx context.Context, commandRoot string, snaps
 			Title:        relPath,
 			Content:      string(content),
 			Size:         rel.Size,
-			RepositoryID: snapshot.RepositoryID,
-			Source:       "git_worktree",
+			RepositoryID:  snapshot.RepositoryID,
+			Source:        "git_worktree",
+			ContentSHA256: rel.ContentSHA256,
 		})
 		snapshot.Files = append(snapshot.Files, rel)
 	}
