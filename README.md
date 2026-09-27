@@ -10,6 +10,12 @@ Real execution records are indexed under [`runtime_tests/`](./runtime_tests/). T
 
 The three canonical lifecycle prompts are versioned under [`official_prompts/`](./official_prompts/).
 
+## Local-first workstation
+
+Phase 1 introduces the first local-authority workstation vertical slice under [`local_app/`](./local_app/). It is intentionally isolated from the sealed Phase-0 pack and proves explicit draft/save/refresh semantics, the 0:4 / 1:3 / 2:2 / 3:1 workstation geometry, integrated five-slot tool spines, semantic document panes, and read-only single-file HTML5 export.
+
+This branch does **not** yet add Git mutation UI, OpenCode execution, remote synchronization, publication, or graduation automation.
+
 Core invariant:
 
 > GPT designs → Git records → OpenCode executes → Git records → GPT audits.

@@ -1,0 +1,2 @@
+AUTHORITY: LOCAL
+This fixture exists only to exercise workstation navigation and projection.

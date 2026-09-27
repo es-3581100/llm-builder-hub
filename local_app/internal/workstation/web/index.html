@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" data-hub-app="local-workstation" data-authority="local">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM-Hub Local Workstation</title>
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body data-compact="false">
+<header class="topbar" aria-label="Primary controls">
+  <div class="authority"><strong>LLM-HUB</strong><span>AUTHORITY: LOCAL</span><span id="revision">revision —</span></div>
+  <div class="save-state" id="save-state" data-state="loading">LOADING</div>
+  <div class="actions">
+    <button id="save-btn" data-action="save" type="button">SAVE CHANGES</button>
+    <button id="clear-btn" data-action="clear" type="button">CLEAR EDITS</button>
+    <button id="refresh-btn" data-action="refresh" type="button">REFRESH</button>
+    <a id="export-btn" class="button-link" data-action="export" href="/api/export" download="llm-hub-project.html">EXPORT HTML5</a>
+  </div>
+</header>
+
+<div id="refresh-guard" class="refresh-guard" hidden role="alert" aria-live="assertive">
+  <strong>UNSAVED EDITS</strong>
+  <span>Refresh will not overwrite draft state.</span>
+  <button type="button" data-refresh-choice="save">SAVE CHANGES</button>
+  <button type="button" data-refresh-choice="clear">CLEAR EDITS</button>
+  <button type="button" data-refresh-choice="cancel">CANCEL REFRESH</button>
+</div>
+
+<div class="app-shell">
+  <nav class="quick-rail" aria-label="Quick access" data-quick-rail="true">
+    <button type="button" data-depth="0" title="Home / close hierarchical sliders" aria-label="Home">⌂</button>
+    <button type="button" data-depth="1" title="Workspace" aria-label="Workspace">W</button>
+    <button type="button" data-depth="2" title="Project" aria-label="Project">P</button>
+    <button type="button" data-depth="3" title="Branch / view context" aria-labl="Branch / view context">B</button>
+    <button type="button" id="documents-quick" title="Documents" aria-label="Documents">▤�</button>
+    <button type="button" id="search-quick" title="Search" aria-label="Search">⌕</button>
+    <button type="button" id="settings-quick" title="Settings" aria-label="Settings">⚙</button>
+  </nav>
+
+  <div class="left-sliders" id="left-sliders" data-open-sliders="0">
+    <nav class="slider level-1" data-hub-slider="workspace" data-level="1" data-open="false" hidden>
+      <div class="slider-body">
+        <header><span>WORKSPACE</span><strong id="workspace-name">—</strong></header>
+        <div class="slider-view" data-slider-view="workspace"></div>
+      </div>
+      <aside class="tool-spine" data-tool-spine="workspace" aria-label="Workspace tools"></aside>
+    </nav>
+
+    <nav class="slider level-2" data-hub-slider="project" data-level="2" data-open="false" hidden>
+      <div class="slider-body">
+        <header><span>PROJECT</span><strong id="project-name">—</strong></header>
+        <div class="slider-view" data-slider-view="project"></div>
+      </div>
+      <aside class="tool-spine" data-tool-spine="project" aria-label="Project tools"></aside>
+    </nav>
+
+    <nav class="slider level-3" data-hub-slider="branch" data-level="3" data-open="false" hidden>
+      <div class="slider-body">
+        <header><span>BRANCH / VIEW</span><strong id="branch-name">—</strong></header>
+        <div class="slider-view" data-slider-view="branch"></div>
+      </div>
+      <aside class="tool-spine" data-tool-spine="branch" aria-label="Branch tools"></aside>
+    </nav>
+  </div>
+
+  <main class="workspace" id="workspace" data-document-columns="4" data-authority="local">
+    <div class="compact-banner" id="compact-banner" hidden>COMPACT MODE — DESKTOP GEOMETRY</div>
+    <div class="workspace-status">
+      <span id="project-root">root: —</span>
+      <span id="state-hash">state sha256: —</span>
+      <span id="active-document-label">active: —</span>
+    </div>
+    <section class="document-stream" id="document-stream" data-document-stream="true" aria-label="Ordered project documents"></section>
+  </main>
+</div>
+
+<aside class="right-drawer" id="right-drawer" data-drawer-state="closed" aria-label="Project and system controls">
+  <section class="drawer-pane project-pane" data-drawer-pane="project" hidden>
+    <header><strong>PROJECT MANAGEMENT</strong><button type="button" data-close-drawer="true">×</button></header>
+    <label>Project name<input id="project-name-input" type="text"></label>
+    <label>Project root<input id="project-root-input" type="text"></label>
+    <label>Branch<input id="project-branch-input" type="text"></label>
+    <p class="hint">Edits are drafts until SAVE CHANGES.</p>
+  </section>
+  <section class="drawer-pane system-pane" data-drawer-pane="system" hidden>
+    <header><strong>SYSTEM SETTINGS</strong><button type="button" data-close-drawer="true">×</button></header>
+    <label>Customize spine
+      <select id="tool-slider-select">
+        <option value="workspace">Workspace</option>
+        <option value="project">Project</option>
+        <option value="branch">Branch</option>
+      </select>
+    </label>
+    <div id="tool-editor" data-tool-editor="true"></div>
+    <p class="hint">Icon, label, shortcut, destination and enabled state participate in explicit dirty/save semantics.</p>
+  </section>
+</aside>
+
+<script src="/assets/app.js" defer></script>
+</body>
+</html>

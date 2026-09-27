@@ -1,0 +1,232 @@
+{
+  "schema_version": "1.0.0",
+  "authority": "LOCAL",
+  "revision": 1,
+  "project": {
+    "name": "sample-local-project",
+    "root": "./fixtures/sample-project",
+    "workspace": "Local Workspace",
+    "branch": "main"
+  },
+  "sliders": [
+    {
+      "id": "workspace",
+      "level": 1,
+      "tools": [
+        {
+          "slot": 1,
+          "icon": "◈",
+          "label": "Prompt Tree",
+          "tooltip": "Prompt Tree",
+          "target": "prompt-tree",
+          "shortcut": "Alt+1",
+          "enabled": true
+        },
+        {
+          "slot": 2,
+          "icon": "▤",
+          "label": "Files",
+          "tooltip": "Files",
+          "target": "files",
+          "shortcut": "Alt+2",
+          "enabled": true
+        },
+        {
+          "slot": 3,
+          "icon": "▶",
+          "label": "Runs",
+          "tooltip": "Runs",
+          "target": "runs",
+          "shortcut": "Alt+3",
+          "enabled": true
+        },
+        {
+          "slot": 4,
+          "icon": "≣",
+          "label": "Reports",
+          "tooltip": "Reports",
+          "target": "reports",
+          "shortcut": "Alt+4",
+          "enabled": true
+        },
+        {
+          "slot": 5,
+          "icon": "⌕",
+          "label": "Search",
+          "tooltip": "Search",
+          "target": "search",
+          "shortcut": "Alt+5",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "project",
+      "level": 2,
+      "tools": [
+        {
+          "slot": 1,
+          "icon": "◈",
+          "label": "Nodes",
+          "tooltip": "Nodes",
+          "target": "nodes",
+          "shortcut": "Ctrl+Alt+1",
+          "enabled": true
+        },
+        {
+          "slot": 2,
+          "icon": "▤",
+          "label": "Ledger",
+          "tooltip": "Ledger",
+          "target": "ledger",
+          "shortcut": "Ctrl+Alt+2",
+          "enabled": true
+        },
+        {
+          "slot": 3,
+          "icon": "◇",
+          "label": "Artifacts",
+          "tooltip": "Artifacts",
+          "target": "artifacts",
+          "shortcut": "Ctrl+Alt+3",
+          "enabled": true
+        },
+        {
+          "slot": 4,
+          "icon": "↶",
+          "label": "History",
+          "tooltip": "History",
+          "target": "history",
+          "shortcut": "Ctrl+Alt+4",
+          "enabled": true
+        },
+        {
+          "slot": 5,
+          "icon": "⇧",
+          "label": "Publish",
+          "tooltip": "Publish",
+          "target": "publish",
+          "shortcut": "Ctrl+Alt+5",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "branch",
+      "level": 3,
+      "tools": [
+        {
+          "slot": 1,
+          "icon": "◆",
+          "label": "Current View",
+          "tooltip": "Current View",
+          "target": "current",
+          "shortcut": "Shift+Alt+1",
+          "enabled": true
+        },
+        {
+          "slot": 2,
+          "icon": "▣",
+          "label": "Projection",
+          "tooltip": "Projection",
+          "target": "projection",
+          "shortcut": "Shift+Alt+2",
+          "enabled": true
+        },
+        {
+          "slot": 3,
+          "icon": "¶",
+          "label": "Context",
+          "tooltip": "Context",
+          "target": "context",
+          "shortcut": "Shift+Alt+3",
+          "enabled": true
+        },
+        {
+          "slot": 4,
+          "icon": "✓",
+          "label": "Verification",
+          "tooltip": "Verification",
+          "target": "verification",
+          "shortcut": "Shift+Alt+4",
+          "enabled": true
+        },
+        {
+          "slot": 5,
+          "icon": "⚙",
+          "label": "Settings",
+          "tooltip": "Settings",
+          "target": "settings",
+          "shortcut": "Shift+Alt+5",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "id": "project-readme",
+      "kind": "markdown",
+      "title": "PROJECT README",
+      "content": "# Sample Local Project\n\nThis fixture demonstrates the local-first workstation shell.",
+      "editable": true,
+      "order": 1
+    },
+    {
+      "id": "build-ledger",
+      "kind": "yaml",
+      "title": "BUILD LEDGER",
+      "content": "phase: 1\nstatus: active\nauthority: local",
+      "editable": true,
+      "order": 2
+    },
+    {
+      "id": "task-payload",
+      "kind": "text",
+      "title": "TASK PAYLOAD",
+      "content": "Project decisions live here. Builder Hub transports the resulting payload.",
+      "editable": true,
+      "order": 3
+    },
+    {
+      "id": "manifest",
+      "kind": "json",
+      "title": "MANIFEST",
+      "content": "{\n  \"projection\": \"sample\",\n  \"authority\": \"LOCAL\"\n}",
+      "editable": false,
+      "order": 4
+    },
+    {
+      "id": "verification",
+      "kind": "text",
+      "title": "VERIFICATION",
+      "content": "No execution is performed in Phase 1. This document records workstation-shell checks.",
+      "editable": true,
+      "order": 5
+    },
+    {
+      "id": "audit",
+      "kind": "markdown",
+      "title": "AUDIT",
+      "content": "## Audit\n\nStatic projection and explicit save semantics are required.",
+      "editable": true,
+      "order": 6
+    },
+    {
+      "id": "report",
+      "kind": "text",
+      "title": "REPORT",
+      "content": "Local workstation vertical slice.",
+      "editable": true,
+      "order": 7
+    },
+    {
+      "id": "notes",
+      "kind": "text",
+      "title": "NOTES",
+      "content": "Use visible controls. Avoid hidden authority transitions.",
+      "editable": true,
+      "order": 8
+    }
+  ]
+}
