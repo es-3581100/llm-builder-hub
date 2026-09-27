@@ -8,19 +8,48 @@ PORT="${PORT:-18766}"
 ADDR="127.0.0.1:${PORT}"
 URL="http://${ADDR}"
 
-for cmd in git go curl python3 sha256sum grep sort; do
+for cmd in git go curl sha256sum grep sort; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "PHASE3_HOST_ACCEPTANCE_BLOCKED: missing command: $cmd" >&2
     exit 2
   }
 done
 
-python3 - <<'PY' >/dev/null 2>&1 || {
-from playwright.sync_api import sync_playwright
-PY
-  echo "PHASE3_HOST_ACCEPTANCE_BLOCKED: Python Playwright is not installed in this python3 environment" >&2
+PYTHON_BIN="${PHASE3_PYTHON:-}"
+if [[ -z "$PYTHON_BIN" ]]; then
+  CANDIDATES=()
+  if [[ -n "${CONDA_PREFIX:-}" ]]; then
+    CANDIDATES+=("$CONDA_PREFIX/bin/python")
+  fi
+  CANDIDATES+=(python3 python)
+
+  for candidate in "${CANDIDATES[@]}"; do
+    if [[ "$candidate" == */* ]]; then
+      [[ -x "$candidate" ]] || continue
+      resolved="$candidate"
+    else
+      resolved="$(command -v "$candidate" 2>/dev/null || true)"
+      [[ -n "$resolved" ]] || continue
+    fi
+    if "$resolved" -c 'from playwright.sync_api import sync_playwright' >/dev/null 2>&1; then
+      PYTHON_BIN="$resolved"
+      break
+    fi
+  done
+fi
+
+if [[ -z "$PYTHON_BIN" ]]; then
+  echo "PHASE3_HOST_ACCEPTANCE_BLOCKED: no Python interpreter with Playwright found" >&2
+  echo "Tried CONDA_PREFIX/bin/python, python3, and python. Override with PHASE3_PYTHON=/path/to/python." >&2
   exit 2
-}
+fi
+
+if ! "$PYTHON_BIN" -c 'from playwright.sync_api import sync_playwright' >/dev/null 2>&1; then
+  echo "PHASE3_HOST_ACCEPTANCE_BLOCKED: $PYTHON_BIN cannot import Playwright" >&2
+  exit 2
+fi
+
+echo "PHASE3_PYTHON=$PYTHON_BIN"
 
 cd "$REPO_ROOT"
 
@@ -80,7 +109,7 @@ SERVICE_PID=$!
 
 READY=0
 for _ in $(seq 1 100); do
-  if kill -0 "$SERVICE_PID" 2>/dev/null     && curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-before.json" 2>/dev/null     && python3 - "$EVIDENCE_DIR/state-before.json" >/dev/null 2>&1 <<'PY'
+  if kill -0 "$SERVICE_PID" 2>/dev/null     && curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-before.json" 2>/dev/null     && "$PYTHON_BIN" - "$EVIDENCE_DIR/state-before.json" >/dev/null 2>&1 <<'PY'
 import json, sys
 json.load(open(sys.argv[1]))
 PY
@@ -97,16 +126,16 @@ if [[ "$READY" -ne 1 ]]; then
   exit 2
 fi
 
-REV_BEFORE="$(python3 - "$EVIDENCE_DIR/state-before.json" <<'PY'
+REV_BEFORE="$("$PYTHON_BIN" - "$EVIDENCE_DIR/state-before.json" <<'PY'
 import json, sys
 print(json.load(open(sys.argv[1]))["state"]["revision"])
 PY
 )"
 
-python3 "$APP_DIR/scripts/host-accept-phase3.py" "$URL" "$TEST_REPO" "$EVIDENCE_DIR"
+"$PYTHON_BIN" "$APP_DIR/scripts/host-accept-phase3.py" "$URL" "$TEST_REPO" "$EVIDENCE_DIR"
 
 curl -fsS "$URL/api/state" >"$EVIDENCE_DIR/state-after.json"
-REV_AFTER="$(python3 - "$EVIDENCE_DIR/state-after.json" <<'PY'
+REV_AFTER="$("$PYTHON_BIN" - "$EVIDENCE_DIR/state-after.json" <<'PY'
 import json, sys
 print(json.load(open(sys.argv[1]))["state"]["revision"])
 PY
