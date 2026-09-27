@@ -29,7 +29,7 @@ phase3/source-file-mutation
 Accepted Phase-2 source baseline:
 
 ```text
-8b637f930dadd960ff98fee771240d948f3559cf
+2b7459351fecd97b699d4b0a2cb413573d40a264
 ```
 
 Phase-3 design contract:
@@ -38,12 +38,12 @@ Phase-3 design contract:
 local_app/PHASE3_SOURCE_MUTATION_MODEL.md
 ```
 
-The Phase-3 branch was created directly from the accepted Phase-2 commit. Phase 2 has already passed its real destination-host/browser acceptance. Do not reopen or redesign Phase 2 unless a Phase-3 regression proves a real inherited defect.
+The Phase-3 branch inherits the current Phase-2 head above. Real destination-host/browser acceptance passed on the preceding accepted Phase-2 implementation, and the later Phase-2 commits are acceptance-evidence/logging hardening that this branch must preserve. The baseline verifier remains authoritative before Phase-3 implementation. Do not reopen or redesign Phase 2 unless a Phase-3 regression proves a real inherited defect.
 
 Before modifying anything:
 
 1. verify the repository identity and current branch;
-2. verify the branch descends from `8b637f930dadd960ff98fee771240d948f3559cf`;
+2. verify the branch descends from `2b7459351fecd97b699d4b0a2cb413573d40a264`;
 3. require a clean worktree;
 4. read:
    - `local_app/PHASE3_SOURCE_MUTATION_MODEL.md`
