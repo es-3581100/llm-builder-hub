@@ -1,54 +1,98 @@
-# Phase-1 State Model
+# Local Workstation State Model — Phases 1–3
 
-## Layers
+## Workstation state
 
-The Phase-1 workstation deliberately separates three states:
+The workstation separates authoritative persisted state from the browser's saved and draft copies:
 
 ```text
 AUTHORITATIVE LOCAL STATE
     persisted JSON owned by the local service
 
 SAVED UI / PROJECT STATE
-    the last state returned by the local service after explicit save/load
+    last state returned by the local service
 
 DRAFT UI STATE
-    the browser-side editable copy
+    browser-side editable copy
 ```
 
-Typing changes only the draft copy.
+Typing in an ordinary workstation document or project/tool control changes only the workstation draft.
 
 ```text
 DRAFT != SAVED
 → UNSAVED EDITS
 ```
 
-`SAVE CHANGES` POSTs the complete draft state with its current revision. The local service validates the shape, requires exactly three sliders and exactly five tools per slider, advances the revision, and atomically replaces the authoritative state file.
+`SAVE CHANGES` POSTs the complete workstation draft with its current revision. The service validates the shape, advances the revision, and atomically replaces the authoritative state file.
 
-A stale revision returns HTTP 409 `CONFLICTED` rather than overwriting a newer authoritative revision.
+A stale workstation revision returns HTTP 409 `CONFLICTED`.
 
-`CLEAR EDITS` restores the browser draft from the last saved state.
+`CLEAR EDITS` restores the workstation draft from the last saved state.
 
-`REFRESH` reloads authoritative state only when the draft is clean. If dirty, the UI exposes explicit Save / Clear / Cancel choices and does not silently discard edits.
+## Repository observation
+
+Repository state is a separate authority surface derived from the configured local Git worktree.
+
+The server observes repository identity, HEAD/branch state, staged/unstaged/untracked changes, diffs, history, source-file relationships, and eligible text documents. Repository observation does not advance workstation revision and does not contact a remote.
+
+## Phase-3 source draft
+
+Phase 3 adds a third browser-side state:
+
+```text
+REPOSITORY SOURCE DRAFT
+```
+
+It is created only after explicit `EDIT SOURCE` on an eligible repository text document.
+
+The source draft binds:
+
+```text
+repository_id
+document_id
+path
+expected_content_sha256
+original content
+draft content
+```
+
+It is not embedded in workstation JSON and therefore is not persisted by `SAVE CHANGES`.
+
+```text
+SAVE CHANGES
+→ workstation state only
+
+WRITE FILE
+→ selected repository source file only
+```
+
+A dirty source draft blocks authoritative REFRESH. `CANCEL SOURCE EDIT` discards only that source draft.
+
+On `WRITE FILE`, stale content or identity returns a typed conflict. The external file is preserved and the browser keeps the source draft for inspection/recovery.
+
+Only a successful source write replaces the worktree file, adopts the returned fresh repository snapshot, and exits source-edit mode.
 
 ## Persistence
 
-The default authoritative path is:
+The default authoritative workstation-state path is outside the inspected repository:
 
 ```text
-.llm-hub/workstation-state.json
+$XDG_STATE_HOME/llm-hub/workstation-state.json
+or
+~/.local/state/llm-hub/workstation-state.json
 ```
 
-The state file is written atomically via temporary file + rename and with mode `0600`.
+The state file is written atomically with restrictive permissions.
 
-Phase 1 intentionally uses JSON rather than introducing a database.
+Repository source writes are separate atomic replacements in the configured worktree and do not modify workstation-state revision.
 
-## SAVE != SEAL != RUN != PUBLISH
-
-Only SAVE exists in this phase.
+## SAVE != WRITE FILE != SEAL != RUN != PUBLISH
 
 ```text
-SAVE
-→ mutable authoritative local project/workstation state
+SAVE CHANGES
+→ mutable authoritative workstation state
+
+WRITE FILE
+→ explicit existing-file worktree mutation
 
 SEAL
 → deferred
@@ -60,4 +104,4 @@ PUBLISH
 → deferred
 ```
 
-No fake buttons claim those later capabilities.
+No later-phase authority is implied by Phase 3.

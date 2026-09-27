@@ -9,9 +9,7 @@ SAVE CHANGES = persist workstation state
 WRITE FILE   = explicit repository working-tree mutation
 ```
 
-The first checkpoint intentionally implements only the guarded filesystem write primitive. It does **not** expose an HTTP mutation endpoint or browser control yet.
-
-## Write contract
+## Guarded write primitive
 
 A write request is bound to:
 
@@ -25,12 +23,9 @@ Before replacement, the writer rejects stale repository/document identity, delet
 
 Successful writes use a same-directory temporary file, sync, atomic rename, immediate byte/hash readback, and a fresh Git repository inspection. The resulting Git working-tree diff is evidence of the mutation. The Git index is not modified.
 
-This checkpoint does not add Git add/restore/reset/commit, branch operations, fetch/pull/push, merge/rebase, OpenCode execution, actors, RUN, SEAL, or PUBLISH.
+## HTTP boundary
 
-
-## HTTP boundary checkpoint
-
-The next checkpoint exposes the already-guarded writer at:
+The guarded writer is exposed only at:
 
 ```text
 POST /api/write-file
@@ -51,10 +46,9 @@ Success returns the write result plus the fresh repository snapshot. Errors are 
 
 Server logs record status, code, path, and before/after content hashes, never replacement content.
 
+## Browser integration
 
-## Browser integration checkpoint
-
-Repository-backed text documents now expose a separate source-edit surface:
+Repository-backed text documents expose a separate source-edit surface:
 
 ```text
 EDIT SOURCE
@@ -66,9 +60,49 @@ WRITE FILE
 POST /api/write-file
 ```
 
-This source draft is not part of workstation state. `SAVE CHANGES` continues to persist only workstation state. A dirty source draft blocks REFRESH rather than being silently discarded. HTTP conflicts retain the browser source draft and its original repository/document/path/content-hash binding. Only a successful `WRITE FILE` adopts the returned fresh repository snapshot and exits source edit mode.
+This source draft is not part of workstation state. `SAVE CHANGES` continues to persist only workstation state.
+
+A dirty source draft blocks REFRESH rather than being silently discarded. HTTP conflicts retain the browser source draft and its original repository/document/path/content-hash binding. Only a successful `WRITE FILE` adopts the returned fresh repository snapshot and exits source-edit mode.
 
 `CANCEL SOURCE EDIT` discards only the browser source draft and performs no filesystem mutation.
 
-
 During an in-flight `WRITE FILE`, the source textarea is disabled so edits cannot race the request and then be lost on success. An authoritative refresh is allowed only when there is no dirty source draft and clears any non-dirty source edit session.
+
+## Verification discipline
+
+Verification is non-mutating. Formatting drift is a failure condition, not something a verifier silently repairs.
+
+Phase-3 mechanical completion is checked by:
+
+```text
+scripts/verify-phase3.sh
+```
+
+Real browser behavior and destination-host invariants are checked by:
+
+```text
+scripts/host-accept-phase3.sh
+```
+
+Phase 3 is complete only when both pass.
+
+## Deferred authority
+
+Phase 3 does not add:
+
+```text
+new-file creation
+delete / rename
+Git add / reset / restore
+commit creation
+branch switching
+merge / rebase
+fetch / pull / push
+remote synchronization
+OpenCode execution
+actors
+SEAL
+RUN
+PUBLISH
+GitHub mutation
+```
