@@ -13,3 +13,8 @@ Evidence is written outside the repository:
 ```
 
 The disposable repository is never staged, restored, committed, branched, fetched, pulled, or pushed after its setup commit.
+
+
+## Autonomous acceptance
+
+The preferred Phase-3 host acceptance path is now `scripts/host-accept-phase3-auto.sh`. It drives the real loopback UI with a Chromium-family browser through Python Playwright and records machine-verifiable browser, filesystem, Git-index, API, log, and revision evidence. The older interactive questionnaire is retained only as a historical/manual fallback and is not the default execution path.
