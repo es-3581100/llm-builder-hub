@@ -31,8 +31,8 @@
     <button type="button" data-depth="0" title="Home / close hierarchical sliders" aria-label="Home">⌂</button>
     <button type="button" data-depth="1" title="Workspace" aria-label="Workspace">W</button>
     <button type="button" data-depth="2" title="Project" aria-label="Project">P</button>
-    <button type="button" data-depth="3" title="Branch / view context" aria-labl="Branch / view context">B</button>
-    <button type="button" id="documents-quick" title="Documents" aria-label="Documents">▤�</button>
+    <button type="button" data-depth="3" title="Branch / view context" aria-label="Branch / view context">B</button>
+    <button type="button" id="documents-quick" title="Documents" aria-label="Documents">▤</button>
     <button type="button" id="search-quick" title="Search" aria-label="Search">⌕</button>
     <button type="button" id="settings-quick" title="Settings" aria-label="Settings">⚙</button>
   </nav>
@@ -66,11 +66,27 @@
   <main class="workspace" id="workspace" data-document-columns="4" data-authority="local">
     <div class="compact-banner" id="compact-banner" hidden>COMPACT MODE — DESKTOP GEOMETRY</div>
     <div class="workspace-status">
-      <span id="project-root">root: —</span>
-      <span id="state-hash">state sha256: —</span>
+      <span id="project-root">repository root: —</span>
+      <span id="state-hash">workstation state sha256: —</span>
       <span id="active-document-label">active: —</span>
     </div>
-    <section class="document-stream" id="document-stream" data-document-stream="true" aria-label="Ordered project documents"></section>
+    <section class="repository-status" id="repository-status" data-repository-authority="git" aria-label="Local Git repository status">
+      <header><strong>LOCAL GIT REPOSITORY</strong><span class="repo-readonly">READ-ONLY INSPECTION</span></header>
+      <div class="repository-grid">
+        <span id="repository-id">repository: —</span>
+        <span id="repository-head">HEAD: —</span>
+        <span id="repository-branch">branch: —</span>
+        <span id="repository-clean">working tree: —</span>
+        <span id="repository-counts">staged: — · unstaged: — · untracked: —</span>
+        <span id="repository-hash">repo snapshot sha256: —</span>
+      </div>
+      <details><summary id="staged-summary">Staged changes</summary><div id="staged-changes"></div><pre id="staged-diff"></pre></details>
+      <details><summary id="unstaged-summary">Unstaged changes</summary><div id="unstaged-changes"></div><pre id="unstaged-diff"></pre></details>
+      <details><summary id="untracked-summary">Untracked files</summary><div id="untracked-files"></div></details>
+      <details><summary id="history-summary">Recent local history</summary><div id="repository-history"></div></details>
+      <details><summary id="relationships-summary">Source relationships</summary><div id="source-relationships"></div></details>
+    </section>
+    <section class="document-stream" id="document-stream" data-document-stream="true" aria-label="Ordered workstation and Git-backed documents"></section>
   </main>
 </div>
 
@@ -78,9 +94,9 @@
   <section class="drawer-pane project-pane" data-drawer-pane="project" hidden>
     <header><strong>PROJECT MANAGEMENT</strong><button type="button" data-close-drawer="true">×</button></header>
     <label>Project name<input id="project-name-input" type="text"></label>
-    <label>Project root<input id="project-root-input" type="text"></label>
-    <label>Branch<input id="project-branch-input" type="text"></label>
-    <p class="hint">Edits are drafts until SAVE CHANGES.</p>
+    <label>Workstation root label<input id="project-root-input" type="text"></label>
+    <label>Workstation branch label<input id="project-branch-input" type="text"></label>
+    <p class="hint">These are workstation metadata drafts. They do not change the inspected Git repository, branch, HEAD, index, or working tree.</p>
   </section>
   <section class="drawer-pane system-pane" data-drawer-pane="system" hidden>
     <header><strong>SYSTEM SETTINGS</strong><button type="button" data-close-drawer="true">×</button></header>
