@@ -80,7 +80,7 @@ A typed HTTP conflict remains visibly distinct from workstation revision conflic
 
 A successful source write adopts the fresh repository snapshot returned by the service and exits source-edit mode.
 
-A dirty source draft blocks REFRESH so it cannot be silently discarded.
+A dirty source draft blocks REFRESH so it cannot be silently discarded. It also blocks starting EDIT SOURCE on a different repository document until the existing draft is written or explicitly cancelled.
 
 ## Right drawer
 

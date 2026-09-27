@@ -8,18 +8,20 @@ Phase 3 begins from accepted Phase-2 head:
 2b7459351fecd97b699d4b0a2cb413573d40a264
 ```
 
-Implemented checkpoints:
+Integrated Phase-3 history includes:
 
 ```text
 4b1aa3f  guarded working-tree writer
 4488eff  typed POST /api/write-file boundary
 860aab3  explicit browser source-write integration
+b662b28  prevent dirty source-draft replacement
 ec3f555  non-mutating formatting/verification repair
+a01b77a  destination-host acceptance and export regressions
 ```
 
-## Implemented
+The automated-acceptance integration line preserves both formerly divergent Phase-3 lines and replaces manual browser census prompts with machine-driven browser acceptance.
 
-Phase 3 now contains:
+## Implemented
 
 - stable repository/document/content identity binding;
 - guarded replacement of an existing eligible text file;
@@ -30,16 +32,15 @@ Phase 3 now contains:
 - explicit `POST /api/write-file`;
 - structured write-attempt logging;
 - browser `EDIT SOURCE`, source draft, `WRITE FILE`, and cancel semantics;
+- one-dirty-source-draft-at-a-time guard;
 - source/workstation state separation;
 - conflict draft retention;
-- fresh repository reconciliation after successful write;
-- static export remaining read-only;
+- fresh repository reconciliation;
+- static export mutation-surface regression coverage;
 - non-mutating composed verification;
-- a destination-host Phase-3 acceptance harness.
+- fully automated real-browser host acceptance via Playwright.
 
-## Safety boundary
-
-Still not implemented:
+## Deferred
 
 ```text
 new-file creation
@@ -58,9 +59,8 @@ SEAL / RUN / PUBLISH
 
 ```text
 build_status=IMPLEMENTATION_PASS
-mechanical_verification=PASS at ec3f555 lineage
-host_acceptance=PENDING
-phase3_complete=PENDING_HOST_ACCEPTANCE
+mechanical_verification=PASS on prior checkpoint
+manual_questionnaire=REMOVED
+automated_host_acceptance=PENDING_DESTINATION_RUN
+phase3_complete=PENDING_DESTINATION_RUN
 ```
-
-The phase is intentionally not declared complete until `scripts/host-accept-phase3.sh` passes in a real graphical browser.

@@ -40,6 +40,10 @@ function repositoryDraftDirty(edit) {
   return !!edit && edit.content !== edit.originalContent;
 }
 
+function canStartRepositoryEdit(currentEdit, nextDocumentId) {
+  return !repositoryDraftDirty(currentEdit) || currentEdit.documentId === nextDocumentId;
+}
+
 function makeRepositoryWriteRequest(edit) {
   if (!edit) return null;
   return {
@@ -234,6 +238,10 @@ function renderDocuments() {
         if (editing) {
           repositoryEdit=null;
         } else {
+          if (!canStartRepositoryEdit(repositoryEdit, doc.id)) {
+            window.alert("SOURCE DRAFT exists. WRITE FILE or CANCEL SOURCE EDIT before editing another source.");
+            return;
+          }
           repositoryEdit={
             repositoryId: repository.repository_id,
             documentId: doc.id,
@@ -551,4 +559,4 @@ function bind() {
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded",()=>{bind();loadAuthoritative().catch(showError);});
 }
-if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick,repositoryDraftDirty,makeRepositoryWriteRequest};
+if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick,repositoryDraftDirty,canStartRepositoryEdit,makeRepositoryWriteRequest};

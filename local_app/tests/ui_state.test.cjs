@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { columnsForDepth, statesEqual, shortcutMatches, repositoryDisplayBranch, shouldRerenderAfterDocumentClick, repositoryDraftDirty, makeRepositoryWriteRequest } = require('../internal/workstation/web/app.js');
+const { columnsForDepth, statesEqual, shortcutMatches, repositoryDisplayBranch, shouldRerenderAfterDocumentClick, repositoryDraftDirty, canStartRepositoryEdit, makeRepositoryWriteRequest } = require('../internal/workstation/web/app.js');
 
 test('desktop slider depth maps exactly 0:4 1:3 2:2 3:1', () => {
   assert.equal(columnsForDepth(0,false),4);
@@ -76,4 +76,17 @@ test('WRITE FILE request binds repository document path and original content has
     content:'after\n'
   });
   assert.equal(makeRepositoryWriteRequest(null),null);
+});
+
+test('dirty repository source draft cannot be silently replaced by editing another source', () => {
+  const dirty = {
+    documentId:'git-a',
+    originalContent:'before\n',
+    content:'draft\n'
+  };
+  assert.equal(canStartRepositoryEdit(dirty,'git-b'),false);
+  assert.equal(canStartRepositoryEdit(dirty,'git-a'),true);
+  dirty.content='before\n';
+  assert.equal(canStartRepositoryEdit(dirty,'git-b'),true);
+  assert.equal(canStartRepositoryEdit(null,'git-b'),true);
 });

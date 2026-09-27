@@ -66,7 +66,7 @@ A dirty source draft blocks REFRESH rather than being silently discarded. HTTP c
 
 `CANCEL SOURCE EDIT` discards only the browser source draft and performs no filesystem mutation.
 
-During an in-flight `WRITE FILE`, the source textarea is disabled so edits cannot race the request and then be lost on success. An authoritative refresh is allowed only when there is no dirty source draft and clears any non-dirty source edit session.
+During an in-flight `WRITE FILE`, the source textarea is disabled so edits cannot race the request and then be lost on success. An authoritative refresh is allowed only when there is no dirty source draft and clears any non-dirty source edit session.\n\nA dirty repository source draft is exclusive: attempting `EDIT SOURCE` on another repository document is blocked until the existing source draft is written or explicitly cancelled. This prevents cross-document source-draft loss.
 
 ## Verification discipline
 

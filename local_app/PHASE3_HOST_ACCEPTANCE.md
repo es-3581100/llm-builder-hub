@@ -1,49 +1,66 @@
-# Phase-3 Host Acceptance
+# Phase-3 Automated Host Acceptance
 
-Phase 3 introduces explicit repository working-tree mutation, so completion requires a destination-host proof in a real graphical browser in addition to the mechanical Go/Node suite.
+Phase 3 no longer requires a human questionnaire.
 
-Run from a clean checkout of the Phase-3 candidate:
+`scripts/host-accept-phase3.sh` creates a disposable Git repository, starts the real loopback service, and invokes `scripts/host-accept-phase3.py` to drive an actual Chromium-class browser engine with Playwright.
+
+Default browser discovery prefers:
+
+```text
+/usr/bin/thorium-browser
+thorium-browser
+chromium
+chromium-browser
+google-chrome
+google-chrome-stable
+```
+
+Override when needed:
 
 ```bash
-cd local_app
-./scripts/verify-phase3.sh
-./scripts/host-accept-phase3.sh
+PHASE3_BROWSER_EXECUTABLE=/path/to/chromium ./scripts/host-accept-phase3.sh
 ```
 
-The host harness creates a disposable Git repository and a disposable workstation-state file. It never uses the Builder Hub checkout as the mutation target.
+The browser runs headless by default. To watch the automation:
 
-The browser checks cover:
+```bash
+PHASE3_BROWSER_HEADLESS=0 ./scripts/host-accept-phase3.sh
+```
+
+The automated browser proves:
 
 ```text
-real browser → real loopback service
+real browser engine → real loopback service
 EDIT SOURCE
-SOURCE DRAFT
+separate SOURCE DRAFT
+dirty source draft cannot be replaced by another source editor
+dirty source draft blocks REFRESH
 WRITE FILE success
-unstaged worktree visibility
-CANCEL SOURCE EDIT with no write
-stale-content conflict
-visible CONTENT_CONFLICT
-stale browser draft preservation
+fresh unstaged Git projection
+CANCEL SOURCE EDIT performs no write
+external edit creates stale-content conflict
+CONTENT_CONFLICT is visible
+stale browser draft survives conflict
+SAVE CHANGES advances workstation state only
 ```
 
-The mechanical tail proves:
+The shell tail independently proves:
 
 ```text
-successful source bytes changed
-cancelled source bytes did not change
-external conflict bytes survived
-browser stale draft did not overwrite the external edit
+expected source bytes
+external conflict bytes preserved
 .git/index SHA-256 unchanged
 HEAD unchanged
 branch unchanged
-no staged changes added
-only expected paths are unstaged
-workstation revision unchanged
+no staged changes
+only expected files unstaged
+exactly one workstation revision advance
 successful and rejected write attempts logged
 static export contains no mutation surface
+test repository remote configuration unchanged
 ```
 
-Evidence is stored under:
+Evidence is written outside the repository under:
 
 ```text
 $XDG_STATE_HOME/llm-hub/phase3-host-acceptance/<UTC>/
@@ -51,20 +68,12 @@ or
 ~/.local/state/llm-hub/phase3-host-acceptance/<UTC>/
 ```
 
-Success terminates with:
+There are no `y/n` prompts and no manual browser steps.
+
+A missing Python Playwright installation or Chromium-class executable is reported as `PHASE3_HOST_ACCEPTANCE_BLOCKED`; functional assertion failures return `PHASE3_HOST_ACCEPTANCE_FAIL`.
+
+Success ends with:
 
 ```text
-PHASE3_IMPLEMENTATION=PASS
-HOST_BROWSER_SOURCE_WRITE_ACCEPTANCE=PASS
 PHASE3_COMPLETE=PASS
 ```
-
-A failed browser or mechanical invariant terminates with:
-
-```text
-PHASE3_IMPLEMENTATION=PASS
-HOST_BROWSER_SOURCE_WRITE_ACCEPTANCE=FAIL
-PHASE3_COMPLETE=BLOCKED
-```
-
-Do not classify Phase 3 as complete until the real host acceptance passes.
