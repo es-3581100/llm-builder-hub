@@ -23,6 +23,7 @@ function shortcutMatches(shortcut, event) {
 
 let saved = null;
 let draft = null;
+let repository = null;
 let stateHash = "";
 let depth = 0;
 let compact = false;
@@ -51,6 +52,7 @@ async function loadAuthoritative() {
   const envelope = await res.json();
   saved = envelope.state;
   draft = clone(saved);
+  repository = envelope.repository || null;
   stateHash = envelope.state_sha256;
   if (!activeDocument && draft.documents.length) activeDocument = draft.documents[0].id;
   renderAll();
@@ -71,6 +73,7 @@ async function saveChanges() {
   const envelope = await res.json();
   saved = envelope.state;
   draft = clone(saved);
+  repository = envelope.repository || repository;
   stateHash = envelope.state_sha256;
   pendingRefresh = false;
   document.getElementById("refresh-guard").hidden = true;
@@ -170,6 +173,36 @@ function renderDocuments() {
     }
     stream.append(article);
   }
+  if (repository) {
+    for (const doc of repository.documents || []) {
+      const article = document.createElement("article");
+      article.className = "document";
+      article.dataset.hubDocument = "true";
+      article.dataset.documentId = doc.id;
+      article.dataset.documentKind = doc.kind;
+      article.dataset.authority = "repository";
+      article.dataset.repositoryId = repository.repository_id;
+      article.dataset.sourcePath = doc.path;
+      article.dataset.editable = "false";
+      article.dataset.active = String(activeDocument === doc.id);
+      article.dataset.editing = "false";
+      article.dataset.state = "repository";
+
+      const header = document.createElement("header");
+      const kind = document.createElement("span"); kind.className="kind"; kind.textContent=doc.kind;
+      const title = document.createElement("strong"); title.textContent=doc.path;
+      const status = document.createElement("span"); status.className="doc-state"; status.textContent="GIT WORKTREE";
+      header.append(kind,title,status);
+      article.append(header);
+      article.addEventListener("click", () => { activeDocument=doc.id; renderDocuments(); });
+      const pre = document.createElement("pre");
+      pre.className="fence";
+      pre.dataset.language=doc.kind;
+      pre.textContent=doc.content;
+      article.append(pre);
+      stream.append(article);
+    }
+  }
   document.getElementById("active-document-label").textContent=`active: ${activeDocument || "—"}`;
 }
 
@@ -241,14 +274,77 @@ function renderMetadata() {
   document.getElementById("revision").textContent=`revision ${draft.revision}`;
   document.getElementById("workspace-name").textContent=draft.project.workspace;
   document.getElementById("project-name").textContent=draft.project.name;
-  document.getElementById("branch-name").textContent=draft.project.branch;
-  document.getElementById("project-root").textContent=`root: ${draft.project.root}`;
-  document.getElementById("state-hash").textContent=`state sha256: ${stateHash || "—"}`;
+  const branch = repository ? repositoryDisplayBranch(repository) : draft.project.branch;
+  document.getElementById("branch-name").textContent=branch;
+  document.getElementById("project-root").textContent=`repository root: ${repository?.root || "—"}`;
+  document.getElementById("state-hash").textContent=`workstation state sha256: ${stateHash || "—"}`;
+}
+
+function repositoryDisplayBranch(repo) {
+  if (repo.branch) return repo.branch;
+  if (repo.detached) return "DETACHED";
+  if (repo.unborn) return "UNBORN";
+  return "UNKNOWN";
+}
+
+function renderRepository() {
+  const panel = document.getElementById("repository-status");
+  if (!repository) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  panel.dataset.repositoryId = repository.repository_id;
+  panel.dataset.repositoryClean = String(repository.clean);
+  panel.dataset.repositoryDetached = String(repository.detached);
+  panel.dataset.repositoryUnborn = String(repository.unborn);
+  document.getElementById("repository-id").textContent=`repository: ${repository.repository_id}`;
+  document.getElementById("repository-head").textContent=`HEAD: ${repository.head_commit || "UNBORN"}`;
+  document.getElementById("repository-branch").textContent=`branch: ${repositoryDisplayBranch(repository)}`;
+  document.getElementById("repository-clean").textContent=`working tree: ${repository.clean ? "CLEAN" : "DIRTY"}`;
+  document.getElementById("repository-counts").textContent=`staged: ${repository.staged.length} · unstaged: ${repository.unstaged.length} · untracked: ${repository.untracked.length}`;
+  document.getElementById("repository-hash").textContent=`repo snapshot sha256: ${repository.snapshot_sha256}`;
+  document.getElementById("staged-summary").textContent=`Staged changes (${repository.staged.length})`;
+  document.getElementById("unstaged-summary").textContent=`Unstaged changes (${repository.unstaged.length})`;
+  document.getElementById("untracked-summary").textContent=`Untracked files (${repository.untracked.length})`;
+  document.getElementById("history-summary").textContent=`Recent local history (${repository.history.length})`;
+  document.getElementById("relationships-summary").textContent=`Source relationships (${repository.files.length})`;
+  renderChangeList(document.getElementById("staged-changes"), repository.staged);
+  renderChangeList(document.getElementById("unstaged-changes"), repository.unstaged);
+  document.getElementById("staged-diff").textContent=repository.staged_diff || "<none>";
+  document.getElementById("unstaged-diff").textContent=repository.unstaged_diff || "<none>";
+  const untracked = document.getElementById("untracked-files"); untracked.replaceChildren();
+  for (const path of repository.untracked) { const row=document.createElement("div"); row.className="repository-change"; row.textContent=`? ${path}`; untracked.append(row); }
+  const history=document.getElementById("repository-history"); history.replaceChildren();
+  for (const item of repository.history) { const row=document.createElement("div"); row.className="repository-history-row"; row.textContent=`${item.short} · ${item.date} · ${item.author} · ${item.subject}`; history.append(row); }
+  const relationships=document.getElementById("source-relationships"); relationships.replaceChildren();
+  for (const file of repository.files) {
+    const row=document.createElement("div"); row.className="repository-file"; row.dataset.binary=String(file.binary); row.dataset.sourceId=file.id; row.dataset.sourcePath=file.path;
+    const flags=[];
+    if(file.staged_status) flags.push(`staged:${file.staged_status}`);
+    if(file.unstaged_status) flags.push(`unstaged:${file.unstaged_status}`);
+    if(file.untracked) flags.push("untracked");
+    if(file.binary) flags.push("binary");
+    if(file.too_large) flags.push("too-large");
+    if(file.symlink) flags.push(`symlink:${file.symlink_target}`);
+    row.textContent=`${flags.length ? `[${flags.join(", ")}] ` : ""}${file.path}${file.previous_path ? ` ← ${file.previous_path}` : ""}${file.document_id ? ` → ${file.document_id}` : ""}`;
+    relationships.append(row);
+  }
+}
+
+function renderChangeList(root, changes) {
+  root.replaceChildren();
+  for (const change of changes) {
+    const row=document.createElement("div"); row.className="repository-change";
+    row.textContent=`${change.status} ${change.previous_path ? `${change.previous_path} → ` : ""}${change.path}`;
+    root.append(row);
+  }
 }
 
 function renderAll() {
   renderGeometry();
   renderMetadata();
+  renderRepository();
   syncProjectInputs();
   renderSpines();
   renderSliderViews();
@@ -311,4 +407,4 @@ function bind() {
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded",()=>{bind();loadAuthoritative().catch(showError);});
 }
-if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches};
+if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch};
