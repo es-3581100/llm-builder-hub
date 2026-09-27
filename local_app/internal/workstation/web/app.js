@@ -140,6 +140,10 @@ function clearEdits() {
 }
 
 function requestRefresh() {
+  if (executionRunning) {
+    window.alert("REFRESH is blocked while local execution is running.");
+    return;
+  }
   if (repositoryDraftDirty(repositoryEdit)) {
     showSourceError(new Error("SOURCE DRAFT exists. WRITE FILE or CANCEL SOURCE EDIT before refresh."));
     return;
@@ -261,6 +265,7 @@ function renderDocuments() {
       edit.type="button";
       edit.dataset.action="toggle-source-edit";
       edit.textContent = editing ? "CANCEL SOURCE EDIT" : "EDIT SOURCE";
+      edit.disabled=executionRunning;
       edit.addEventListener("click", ev => {
         ev.stopPropagation();
         activeDocument=doc.id;
@@ -291,7 +296,7 @@ function renderDocuments() {
         write.type="button";
         write.dataset.action="write-file";
         write.textContent="WRITE FILE";
-        write.disabled=!sourceDirty || repositoryEdit.status === "writing";
+        write.disabled=!sourceDirty || repositoryEdit.status === "writing" || executionRunning;
         write.addEventListener("click", ev => {
           ev.stopPropagation();
           writeRepositoryFile().catch(showSourceError);
@@ -434,7 +439,7 @@ async function runExecution() {
   const request=makeExecutionRequest(repository,values);
   executionRunning=true;
   lastExecution=null;
-  renderExecution();
+  renderAll();
   try{
     const res=await fetch("/api/run",{
       method:"POST",
