@@ -151,7 +151,11 @@ function renderDocuments() {
       header.append(edit);
     }
     article.append(header);
-    article.addEventListener("click", () => { activeDocument=doc.id; renderDocuments(); });
+    article.addEventListener("click", () => {
+      activeDocument=doc.id;
+      if (!shouldRerenderAfterDocumentClick(doc.id, editingDocument)) return;
+      renderDocuments();
+    });
 
     if (editingDocument === doc.id && doc.editable) {
       const textarea = document.createElement("textarea");
@@ -287,6 +291,10 @@ function repositoryDisplayBranch(repo) {
   return "UNKNOWN";
 }
 
+function shouldRerenderAfterDocumentClick(docId, editingId) {
+  return editingId !== docId;
+}
+
 function renderRepository() {
   const panel = document.getElementById("repository-status");
   if (!repository) {
@@ -407,4 +415,4 @@ function bind() {
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded",()=>{bind();loadAuthoritative().catch(showError);});
 }
-if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch};
+if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick};

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { columnsForDepth, statesEqual, shortcutMatches, repositoryDisplayBranch } = require('../internal/workstation/web/app.js');
+const { columnsForDepth, statesEqual, shortcutMatches, repositoryDisplayBranch, shouldRerenderAfterDocumentClick } = require('../internal/workstation/web/app.js');
 
 test('desktop slider depth maps exactly 0:4 1:3 2:2 3:1', () => {
   assert.equal(columnsForDepth(0,false),4);
@@ -28,4 +28,16 @@ test('repository branch labels preserve branch detached and unborn states', () =
   assert.equal(repositoryDisplayBranch({branch:'',detached:true,unborn:false}),'DETACHED');
   assert.equal(repositoryDisplayBranch({branch:'',detached:false,unborn:true}),'UNBORN');
   assert.equal(repositoryDisplayBranch({branch:'',detached:false,unborn:false}),'UNKNOWN');
+});
+
+test('clicking inside the open editor never rebuilds the document stream', () => {
+  // Regression: the article click used to call renderDocuments() unconditionally, which
+  // began with stream.replaceChildren() and destroyed the focused textarea before any
+  // input event could fire, so document edits could never reach the dirty indicator.
+  assert.equal(shouldRerenderAfterDocumentClick('project-readme','project-readme'),false);
+});
+
+test('clicking a document that is not in EDIT mode still rerenders', () => {
+  assert.equal(shouldRerenderAfterDocumentClick('project-readme',null),true);
+  assert.equal(shouldRerenderAfterDocumentClick('project-readme','build-ledger'),true);
 });
