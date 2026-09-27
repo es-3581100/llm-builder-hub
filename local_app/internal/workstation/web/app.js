@@ -29,11 +29,27 @@ let depth = 0;
 let compact = false;
 let activeDocument = null;
 let editingDocument = null;
+let repositoryEdit = null;
 let activeTools = {workspace: 1, project: 1, branch: 1};
 let drawerState = "closed";
 let pendingRefresh = false;
 
 function isDirty() { return saved && draft && !statesEqual(saved, draft); }
+
+function repositoryDraftDirty(edit) {
+  return !!edit && edit.content !== edit.originalContent;
+}
+
+function makeRepositoryWriteRequest(edit) {
+  if (!edit) return null;
+  return {
+    repository_id: edit.repositoryId,
+    document_id: edit.documentId,
+    path: edit.path,
+    expected_content_sha256: edit.expectedContentSHA256,
+    content: edit.content
+  };
+}
 
 function setSaveIndicator(status, label) {
   const el = document.getElementById("save-state");
@@ -47,6 +63,7 @@ function updateDirtyIndicator() {
 }
 
 async function loadAuthoritative() {
+  if (repositoryDraftDirty(repositoryEdit)) throw new Error("SOURCE DRAFT exists. WRITE FILE or CANCEL SOURCE EDIT before refresh.");
   const res = await fetch("/api/state", {cache:"no-store"});
   if (!res.ok) throw new Error(await res.text());
   const envelope = await res.json();
@@ -54,6 +71,7 @@ async function loadAuthoritative() {
   draft = clone(saved);
   repository = envelope.repository || null;
   stateHash = envelope.state_sha256;
+  repositoryEdit = null;
   if (!activeDocument && draft.documents.length) activeDocument = draft.documents[0].id;
   renderAll();
 }
@@ -89,6 +107,10 @@ function clearEdits() {
 }
 
 function requestRefresh() {
+  if (repositoryDraftDirty(repositoryEdit)) {
+    showSourceError(new Error("SOURCE DRAFT exists. WRITE FILE or CANCEL SOURCE EDIT before refresh."));
+    return;
+  }
   if (!isDirty()) return loadAuthoritative().catch(showError);
   pendingRefresh = true;
   document.getElementById("refresh-guard").hidden = false;
@@ -179,6 +201,8 @@ function renderDocuments() {
   }
   if (repository) {
     for (const doc of repository.documents || []) {
+      const editing = repositoryEdit?.documentId === doc.id;
+      const sourceDirty = editing && repositoryDraftDirty(repositoryEdit);
       const article = document.createElement("article");
       article.className = "document";
       article.dataset.hubDocument = "true";
@@ -187,27 +211,139 @@ function renderDocuments() {
       article.dataset.authority = "repository";
       article.dataset.repositoryId = repository.repository_id;
       article.dataset.sourcePath = doc.path;
-      article.dataset.editable = "false";
+      article.dataset.editable = "true";
       article.dataset.active = String(activeDocument === doc.id);
-      article.dataset.editing = "false";
-      article.dataset.state = "repository";
+      article.dataset.editing = String(editing);
+      article.dataset.state = editing ? (sourceDirty ? "source-draft" : "source-edit") : "repository";
 
       const header = document.createElement("header");
       const kind = document.createElement("span"); kind.className="kind"; kind.textContent=doc.kind;
       const title = document.createElement("strong"); title.textContent=doc.path;
-      const status = document.createElement("span"); status.className="doc-state"; status.textContent="GIT WORKTREE";
+      const status = document.createElement("span");
+      status.className="doc-state";
+      status.textContent = editing ? (sourceDirty ? "SOURCE DRAFT" : "SOURCE EDIT") : "GIT WORKTREE";
       header.append(kind,title,status);
+
+      const edit = document.createElement("button");
+      edit.type="button";
+      edit.dataset.action="toggle-source-edit";
+      edit.textContent = editing ? "CANCEL SOURCE EDIT" : "EDIT SOURCE";
+      edit.addEventListener("click", ev => {
+        ev.stopPropagation();
+        activeDocument=doc.id;
+        if (editing) {
+          repositoryEdit=null;
+        } else {
+          repositoryEdit={
+            repositoryId: repository.repository_id,
+            documentId: doc.id,
+            path: doc.path,
+            expectedContentSHA256: doc.content_sha256,
+            originalContent: doc.content,
+            content: doc.content,
+            status: "editing",
+            errorCode: ""
+          };
+        }
+        renderDocuments();
+      });
+      header.append(edit);
+
+      if (editing) {
+        const write = document.createElement("button");
+        write.type="button";
+        write.dataset.action="write-file";
+        write.textContent="WRITE FILE";
+        write.disabled=!sourceDirty || repositoryEdit.status === "writing";
+        write.addEventListener("click", ev => {
+          ev.stopPropagation();
+          writeRepositoryFile().catch(showSourceError);
+        });
+        header.append(write);
+      }
+
       article.append(header);
-      article.addEventListener("click", () => { activeDocument=doc.id; renderDocuments(); });
-      const pre = document.createElement("pre");
-      pre.className="fence";
-      pre.dataset.language=doc.kind;
-      pre.textContent=doc.content;
-      article.append(pre);
+      article.addEventListener("click", () => {
+        activeDocument=doc.id;
+        if (editing) return;
+        renderDocuments();
+      });
+
+      if (editing) {
+        const textarea = document.createElement("textarea");
+        textarea.value=repositoryEdit.content;
+        textarea.disabled=repositoryEdit.status === "writing";
+        textarea.setAttribute("aria-label", `Edit source ${doc.path}`);
+        textarea.addEventListener("input", ev => {
+          repositoryEdit.content=ev.target.value;
+          repositoryEdit.status="editing";
+          repositoryEdit.errorCode="";
+          article.dataset.state=repositoryDraftDirty(repositoryEdit) ? "source-draft" : "source-edit";
+          status.textContent=repositoryDraftDirty(repositoryEdit) ? "SOURCE DRAFT" : "SOURCE EDIT";
+          write.disabled=!repositoryDraftDirty(repositoryEdit);
+        });
+        article.append(textarea);
+        if(repositoryEdit.errorCode){
+          const error=document.createElement("div");
+          error.className="source-write-error";
+          error.dataset.errorCode=repositoryEdit.errorCode;
+          error.textContent=`WRITE BLOCKED: ${repositoryEdit.errorCode}`;
+          article.append(error);
+        }
+      } else {
+        const pre = document.createElement("pre");
+        pre.className="fence";
+        pre.dataset.language=doc.kind;
+        pre.textContent=doc.content;
+        article.append(pre);
+      }
       stream.append(article);
     }
   }
   document.getElementById("active-document-label").textContent=`active: ${activeDocument || "—"}`;
+}
+
+async function writeRepositoryFile() {
+  if (!repositoryEdit || !repositoryDraftDirty(repositoryEdit)) return;
+  repositoryEdit.status="writing";
+  repositoryEdit.errorCode="";
+  renderDocuments();
+
+  const res = await fetch("/api/write-file", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(makeRepositoryWriteRequest(repositoryEdit))
+  });
+  if (!res.ok) {
+    let code="WRITE_FAILED";
+    let message=`WRITE FILE failed with HTTP ${res.status}`;
+    try {
+      const body=await res.json();
+      code=body.code || code;
+      message=body.error || message;
+    } catch (_) {}
+    repositoryEdit.status="conflicted";
+    repositoryEdit.errorCode=code;
+    renderDocuments();
+    const error=new Error(message);
+    error.code=code;
+    throw error;
+  }
+
+  const result=await res.json();
+  repository=result.repository;
+  repositoryEdit=null;
+  renderAll();
+}
+
+function showSourceError(err) {
+  console.error(err);
+  if(repositoryEdit){
+    repositoryEdit.status="conflicted";
+    repositoryEdit.errorCode=err.code || repositoryEdit.errorCode || "WRITE_FAILED";
+    renderDocuments();
+  }
+  window.alert(err.message || String(err));
 }
 
 function renderSpines() {
@@ -415,4 +551,4 @@ function bind() {
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded",()=>{bind();loadAuthoritative().catch(showError);});
 }
-if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick};
+if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick,repositoryDraftDirty,makeRepositoryWriteRequest};

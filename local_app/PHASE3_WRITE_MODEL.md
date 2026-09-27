@@ -50,3 +50,25 @@ Success returns the write result plus the fresh repository snapshot. Errors are 
 - `WRITE_NOT_CONFIGURED` → 404
 
 Server logs record status, code, path, and before/after content hashes, never replacement content.
+
+
+## Browser integration checkpoint
+
+Repository-backed text documents now expose a separate source-edit surface:
+
+```text
+EDIT SOURCE
+  ↓
+browser-only source draft
+  ↓
+WRITE FILE
+  ↓
+POST /api/write-file
+```
+
+This source draft is not part of workstation state. `SAVE CHANGES` continues to persist only workstation state. A dirty source draft blocks REFRESH rather than being silently discarded. HTTP conflicts retain the browser source draft and its original repository/document/path/content-hash binding. Only a successful `WRITE FILE` adopts the returned fresh repository snapshot and exits source edit mode.
+
+`CANCEL SOURCE EDIT` discards only the browser source draft and performs no filesystem mutation.
+
+
+During an in-flight `WRITE FILE`, the source textarea is disabled so edits cannot race the request and then be lost on success. An authoritative refresh is allowed only when there is no dirty source draft and clears any non-dirty source edit session.

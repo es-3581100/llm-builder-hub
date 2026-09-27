@@ -38,3 +38,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .repository-status>header{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:7px}.repository-status>header strong{color:var(--accent)}.repo-readonly{border:1px solid var(--line-strong);padding:1px 5px;font-size:10px;color:var(--muted)}
 .repository-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 12px;font-size:11px}.repository-status details{border-top:1px solid #26333c;margin-top:6px;padding-top:5px}.repository-status summary{cursor:pointer;color:var(--text)}.repository-status pre{white-space:pre-wrap;overflow:auto;max-height:22rem;background:#090f13;padding:8px;color:#dce7df}.repository-change,.repository-file,.repository-history-row{padding:2px 0;overflow-wrap:anywhere}.repository-file[data-binary="true"]{color:var(--warn)}
 .document[data-authority="repository"]{border-color:#40535d}.document[data-authority="repository"]>header{background:#10191e}.document[data-authority="repository"] .doc-state{color:var(--accent-2)}
+
+.document[data-authority="repository"][data-editing="true"]{border-color:var(--warn)}
+.document[data-authority="repository"][data-state="source-draft"] .doc-state{color:var(--warn)}
+.document[data-authority="repository"] button[data-action="write-file"]{border-color:#4f7b62;color:var(--good)}
+.document[data-authority="repository"] button[data-action="write-file"]:disabled{border-color:var(--line);color:var(--muted)}
+.source-write-error{border-top:1px solid #7f3d3d;background:#241012;color:var(--danger);padding:7px 10px;font-size:11px}

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { columnsForDepth, statesEqual, shortcutMatches, repositoryDisplayBranch, shouldRerenderAfterDocumentClick } = require('../internal/workstation/web/app.js');
+const { columnsForDepth, statesEqual, shortcutMatches, repositoryDisplayBranch, shouldRerenderAfterDocumentClick, repositoryDraftDirty, makeRepositoryWriteRequest } = require('../internal/workstation/web/app.js');
 
 test('desktop slider depth maps exactly 0:4 1:3 2:2 3:1', () => {
   assert.equal(columnsForDepth(0,false),4);
@@ -40,4 +40,40 @@ test('clicking inside the open editor never rebuilds the document stream', () =>
 test('clicking a document that is not in EDIT mode still rerenders', () => {
   assert.equal(shouldRerenderAfterDocumentClick('project-readme',null),true);
   assert.equal(shouldRerenderAfterDocumentClick('project-readme','build-ledger'),true);
+});
+
+test('repository source draft is independent and dirty only when content changes', () => {
+  const edit = {
+    repositoryId:'repo-1',
+    documentId:'git-doc',
+    path:'source.txt',
+    expectedContentSHA256:'abc',
+    originalContent:'before\n',
+    content:'before\n'
+  };
+  assert.equal(repositoryDraftDirty(edit),false);
+  edit.content='after\n';
+  assert.equal(repositoryDraftDirty(edit),true);
+  assert.equal(repositoryDraftDirty(null),false);
+});
+
+test('WRITE FILE request binds repository document path and original content hash', () => {
+  const edit = {
+    repositoryId:'repo-1',
+    documentId:'git-doc',
+    path:'source.txt',
+    expectedContentSHA256:'0123456789abcdef',
+    originalContent:'before\n',
+    content:'after\n',
+    status:'editing',
+    errorCode:''
+  };
+  assert.deepEqual(makeRepositoryWriteRequest(edit),{
+    repository_id:'repo-1',
+    document_id:'git-doc',
+    path:'source.txt',
+    expected_content_sha256:'0123456789abcdef',
+    content:'after\n'
+  });
+  assert.equal(makeRepositoryWriteRequest(null),null);
 });
