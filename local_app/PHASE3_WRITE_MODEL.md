@@ -72,3 +72,6 @@ This source draft is not part of workstation state. `SAVE CHANGES` continues to 
 
 
 During an in-flight `WRITE FILE`, the source textarea is disabled so edits cannot race the request and then be lost on success. An authoritative refresh is allowed only when there is no dirty source draft and clears any non-dirty source edit session.
+
+
+A dirty source draft is exclusive: attempting to enter `EDIT SOURCE` on a different repository document is blocked until the existing draft is written or explicitly cancelled. This prevents cross-document navigation from silently discarding source bytes.
