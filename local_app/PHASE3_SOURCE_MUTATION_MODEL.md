@@ -6,7 +6,7 @@ Phase 3 starts from the completed Phase-2 branch state:
 
 ```text
 branch: phase2/local-repository-semantics
-baseline commit: 8b637f930dadd960ff98fee771240d948f3559cf
+baseline commit: 2b7459351fecd97b699d4b0a2cb413573d40a264
 host browser acceptance: PASS
 ```
 
