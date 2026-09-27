@@ -113,35 +113,56 @@ func (s *Server) getRepository(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, snapshot)
 }
 
+func (s *Server) logSave(status int, before, after int64) {
+	if s.Log == nil {
+		return
+	}
+	s.Log.Printf("POST /api/save status=%d revision_before=%d revision_after=%d", status, before, after)
+}
+
 func (s *Server) saveState(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	status := http.StatusInternalServerError
+	before, after := int64(-1), int64(-1)
+	defer func() { s.logSave(status, before, after) }()
+
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20))
 	dec.DisallowUnknownFields()
 	var next State
 	if err := dec.Decode(&next); err != nil {
-		http.Error(w, "invalid state: "+err.Error(), http.StatusBadRequest)
+		status = http.StatusBadRequest
+		http.Error(w, "invalid state: "+err.Error(), status)
 		return
 	}
+	before = next.Revision
+
 	saved, err := s.Store.Save(next)
 	if errors.Is(err, ErrRevisionConflict) {
-		http.Error(w, "CONFLICTED: authoritative local state changed; refresh before saving", http.StatusConflict)
+		status = http.StatusConflict
+		http.Error(w, "CONFLICTED: authoritative local state changed; refresh before saving", status)
 		return
 	}
 	if err != nil {
-		http.Error(w, "save failed: "+err.Error(), http.StatusBadRequest)
+		status = http.StatusBadRequest
+		http.Error(w, "save failed: "+err.Error(), status)
 		return
 	}
+	after = saved.Revision
+
 	hash, err := s.Store.Hash()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		status = http.StatusInternalServerError
+		http.Error(w, err.Error(), status)
 		return
 	}
 	envelope, err := s.envelope(r.Context(), saved, hash)
 	if err != nil {
-		http.Error(w, "repository inspection failed after workstation save: "+err.Error(), http.StatusInternalServerError)
+		status = http.StatusInternalServerError
+		http.Error(w, "repository inspection failed after workstation save: "+err.Error(), status)
 		return
 	}
-	writeJSON(w, http.StatusOK, envelope)
+	status = http.StatusOK
+	writeJSON(w, status, envelope)
 }
 
 func (s *Server) exportHTML(w http.ResponseWriter, r *http.Request) {

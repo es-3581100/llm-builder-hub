@@ -1,6 +1,7 @@
 package workstation
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -91,5 +92,58 @@ func TestRepositoryEndpointAndStaticExportAreReadOnlyProjections(t *testing.T) {
 	}
 	for _, bad := range []string{"<textarea", "data-action=\"save\"", "SAVE CHANGES"} {
 		if strings.Contains(body, bad) { t.Fatalf("export contains mutation surface %q", bad) }
+	}
+}
+
+func TestSaveLogsAttemptStatusAndRevisions(t *testing.T) {
+	dir := initRepo(t, "repo")
+	store := newTestStore(t)
+	var logs bytes.Buffer
+	srv := &Server{
+		Store: store,
+		Repository: NewGitRepository(dir),
+		Log: log.New(&logs, "", 0),
+	}
+
+	state, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := json.Marshal(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/save", strings.NewReader(string(payload)))
+	req.Header.Set("Content-Type", "application/json")
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("success status=%d body=%s", rr.Code, rr.Body.String())
+	}
+	if got := logs.String(); !strings.Contains(got, "POST /api/save status=200 revision_before=1 revision_after=2") {
+		t.Fatalf("success log missing structured save evidence: %q", got)
+	}
+
+	logs.Reset()
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/save", strings.NewReader("{")))
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("invalid status=%d body=%s", rr.Code, rr.Body.String())
+	}
+	if got := logs.String(); !strings.Contains(got, "POST /api/save status=400 revision_before=-1 revision_after=-1") {
+		t.Fatalf("invalid log missing structured failure evidence: %q", got)
+	}
+
+	logs.Reset()
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/api/save", strings.NewReader(string(payload)))
+	req.Header.Set("Content-Type", "application/json")
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusConflict {
+		t.Fatalf("conflict status=%d body=%s", rr.Code, rr.Body.String())
+	}
+	if got := logs.String(); !strings.Contains(got, "POST /api/save status=409 revision_before=1 revision_after=-1") {
+		t.Fatalf("conflict log missing structured failure evidence: %q", got)
 	}
 }
