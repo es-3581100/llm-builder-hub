@@ -1,0 +1,48 @@
+schema_version: "1.0.0"
+phase: phase_1
+status: sealed
+
+identity:
+  hub_repository: "https://github.com/es-3581100/llm-builder-hub.git"
+  expected_hub_commit: null
+  observed_hub_commit: null
+  prompt_pack_sha256: "51dd37eb726e68a6a4a6330615cf97bdb53f2890ac10e552c37236b14ae0a3cc"
+  builder_prompt_sha256: "4e7422e4f39bd3c669d8da44a4b8f0e4ebfdf373b28cd0dbd92a9720453ce33a"
+  source_mode: git
+  source_git_url: "file:///home/sticky-ricky/repos/don-dawg"
+  base_source_commit_sha: "1ccfe66c8d1b83f1d0d553d97966e594f88680d9"
+  source_archive_sha256: null
+  local_baseline_commit_sha: null
+
+builder:
+  provider: opencode
+  model: opencode/space-bunny-free
+  variant: max
+  agent: null
+  auto_approve: false
+
+execution:
+  started_at: null
+  completed_at: null
+  opencode_version: null
+  command_help_sha256: null
+  exit_code: null
+  unexpected_conditions: []
+
+result:
+  commit: null
+  working_tree: unknown
+  changed_files: []
+  verification_commands: []
+  verification_status: pending
+  generated_artifacts: []
+  known_failures: []
+  unresolved_issues: []
+  scope_deviations: []
+
+audit:
+  status: pending
+  audited_commit: null
+  auditor: GPT/browser
+  findings: []
+  next_action: null

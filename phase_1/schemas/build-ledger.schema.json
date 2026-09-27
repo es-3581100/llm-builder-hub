@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/es-3581100/llm-builder-hub/schemas/build-ledger.schema.json",
+  "title": "LLM Builder Hub Build Ledger",
+  "type": "object",
+  "required": ["schema_version", "phase", "status", "identity", "builder", "execution", "result", "audit"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0.0"},
+    "phase": {"type": "string", "pattern": "^phase_[0-9]+$"},
+    "status": {"enum": ["planned", "sealed", "running", "built", "audit_pending", "passed", "repair", "blocked", "abandoned"]},
+    "identity": {
+      "type": "object",
+      "required": ["hub_repository", "expected_hub_commit", "observed_hub_commit", "prompt_pack_sha256", "builder_prompt_sha256", "source_mode", "source_git_url", "base_source_commit_sha", "source_archive_sha256", "local_baseline_commit_sha"],
+      "properties": {
+        "hub_repository": {"type": "string"},
+        "expected_hub_commit": {"type": ["string", "null"]},
+        "observed_hub_commit": {"type": ["string", "null"]},
+        "prompt_pack_sha256": {"type": ["string", "null"]},
+        "builder_prompt_sha256": {"type": ["string", "null"]},
+        "source_mode": {"enum": ["git", "archive", null]},
+        "source_git_url": {"type": ["string", "null"]},
+        "base_source_commit_sha": {"type": ["string", "null"]},
+        "source_archive_sha256": {"type": ["string", "null"]},
+        "local_baseline_commit_sha": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "builder": {
+      "type": "object",
+      "required": ["provider", "model", "variant", "agent", "auto_approve"],
+      "properties": {
+        "provider": {"type": "string"},
+        "model": {"type": "string"},
+        "variant": {"type": ["string", "null"]},
+        "agent": {"type": ["string", "null"]},
+        "auto_approve": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "execution": {
+      "type": "object",
+      "required": ["started_at", "completed_at", "opencode_version", "command_help_sha256", "exit_code", "unexpected_conditions"],
+      "properties": {
+        "started_at": {"type": ["string", "null"]},
+        "completed_at": {"type": ["string", "null"]},
+        "opencode_version": {"type": ["string", "null"]},
+        "command_help_sha256": {"type": ["string", "null"]},
+        "exit_code": {"type": ["integer", "null"]},
+        "unexpected_conditions": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["commit", "working_tree", "changed_files", "verification_commands", "verification_status", "generated_artifacts", "known_failures", "unresolved_issues", "scope_deviations"],
+      "properties": {
+        "commit": {"type": ["string", "null"]},
+        "working_tree": {"enum": ["clean", "dirty", "unknown"]},
+        "changed_files": {"type": "array", "items": {"type": "string"}},
+        "verification_commands": {"type": "array", "items": {"type": "string"}},
+        "verification_status": {"enum": ["pending", "pass", "fail", "partial", "not_run"]},
+        "generated_artifacts": {"type": "array", "items": {"type": "string"}},
+        "known_failures": {"type": "array", "items": {"type": "string"}},
+        "unresolved_issues": {"type": "array", "items": {"type": "string"}},
+        "scope_deviations": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "audit": {
+      "type": "object",
+      "required": ["status", "audited_commit", "auditor", "findings", "next_action"],
+      "properties": {
+        "status": {"enum": ["pending", "pass", "repair", "block"]},
+        "audited_commit": {"type": ["string", "null"]},
+        "auditor": {"type": "string"},
+        "findings": {"type": "array", "items": {"type": "string"}},
+        "next_action": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

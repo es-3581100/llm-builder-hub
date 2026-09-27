@@ -1,0 +1,11 @@
+schema_version: "1.0.0"
+source_name: don-dawg-target-acceptance
+source_mode: git
+source_git_url: file:///home/sticky-ricky/repos/don-dawg
+base_source_commit_sha: 1ccfe66c8d1b83f1d0d553d97966e594f88680d9
+source_archive_path: NONE
+source_archive_sha256: NONE
+builder_prompt_path: prompts/builder.md
+builder_prompt_sha256: 4e7422e4f39bd3c669d8da44a4b8f0e4ebfdf373b28cd0dbd92a9720453ce33a
+model: opencode/space-bunny-free
+variant: max
