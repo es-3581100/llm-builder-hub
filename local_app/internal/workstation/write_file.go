@@ -13,12 +13,12 @@ import (
 )
 
 var (
-	ErrWriteInvalidRequest      = errors.New("invalid write request")
-	ErrWriteRepositoryConflict  = errors.New("repository identity conflict")
-	ErrWriteDocumentConflict    = errors.New("document identity conflict")
-	ErrWriteContentConflict     = errors.New("source content conflict")
-	ErrWriteUnsupportedTarget   = errors.New("unsupported write target")
-	ErrWriteReadbackMismatch    = errors.New("write readback mismatch")
+	ErrWriteInvalidRequest     = errors.New("invalid write request")
+	ErrWriteRepositoryConflict = errors.New("repository identity conflict")
+	ErrWriteDocumentConflict   = errors.New("document identity conflict")
+	ErrWriteContentConflict    = errors.New("source content conflict")
+	ErrWriteUnsupportedTarget  = errors.New("unsupported write target")
+	ErrWriteReadbackMismatch   = errors.New("write readback mismatch")
 )
 
 type RepositoryWriter interface {

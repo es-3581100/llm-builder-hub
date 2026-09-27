@@ -64,16 +64,16 @@ type SourceFileRelationship struct {
 	StagedStatus     string `json:"staged_status,omitempty"`
 	UnstagedStatus   string `json:"unstaged_status,omitempty"`
 	ContentAuthority string `json:"content_authority,omitempty"`
-	ContentSHA256     string `json:"content_sha256,omitempty"`
+	ContentSHA256    string `json:"content_sha256,omitempty"`
 }
 
 type RepositoryDocument struct {
-	ID           string `json:"id"`
-	Path         string `json:"path"`
-	Kind         string `json:"kind"`
-	Title        string `json:"title"`
-	Content      string `json:"content"`
-	Size         int64  `json:"size"`
+	ID            string `json:"id"`
+	Path          string `json:"path"`
+	Kind          string `json:"kind"`
+	Title         string `json:"title"`
+	Content       string `json:"content"`
+	Size          int64  `json:"size"`
 	RepositoryID  string `json:"repository_id"`
 	Source        string `json:"source"`
 	ContentSHA256 string `json:"content_sha256"`
@@ -334,12 +334,12 @@ func (r *GitRepository) loadFiles(ctx context.Context, commandRoot string, snaps
 		documentID := stableRepositoryDocumentID(snapshot.RepositoryID, relPath)
 		rel.DocumentID = documentID
 		snapshot.Documents = append(snapshot.Documents, RepositoryDocument{
-			ID:           documentID,
-			Path:         relPath,
-			Kind:         documentKind(relPath),
-			Title:        relPath,
-			Content:      string(content),
-			Size:         rel.Size,
+			ID:            documentID,
+			Path:          relPath,
+			Kind:          documentKind(relPath),
+			Title:         relPath,
+			Content:       string(content),
+			Size:          rel.Size,
 			RepositoryID:  snapshot.RepositoryID,
 			Source:        "git_worktree",
 			ContentSHA256: rel.ContentSHA256,

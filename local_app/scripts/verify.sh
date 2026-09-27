@@ -2,7 +2,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-gofmt -w cmd internal
+UNFORMATTED="$(gofmt -l cmd internal)"
+if [[ -n "$UNFORMATTED" ]]; then
+  echo "GOFMT_CHECK=FAIL"
+  printf '%s\n' "$UNFORMATTED"
+  exit 1
+fi
+echo "GOFMT_CHECK=PASS"
+
 go test ./...
 go vet ./...
 node --test tests/*.test.cjs
