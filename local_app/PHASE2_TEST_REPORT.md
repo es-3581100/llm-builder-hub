@@ -1,82 +1,101 @@
 # Phase-2 Test Report
 
-## Frozen Phase-1 baseline
+## Evidence classes
 
-Before Phase-2 implementation, the reconstructed accepted baseline was verified with:
-
-```bash
-./scripts/verify.sh
-go test -race ./...
-```
-
-Observed:
+This report distinguishes:
 
 ```text
-PHASE1_LOCAL_APP_VERIFY=PASS
-4 / 4 Phase-1 JavaScript tests PASS
-Go tests PASS
-go vet PASS
-go build PASS
-go test -race PASS
+PRESERVED_PRE_INTERRUPTION
+  results produced before the stream timeout and retained in the recovered blobs
+
+FRESH_RECOVERY_RUNTIME
+  results rerun during recovery against the preserved Phase-2 implementation contract
+
+REMOTE_GIT_OBJECT
+  branch/tree/blob identity read back from GitHub after checkpointing
 ```
 
-## Phase-2 complete verifier
+## Preserved pre-interruption verification
 
-```bash
-./scripts/verify-phase2.sh
-```
-
-The verifier runs the complete Phase-1 suite first, then Phase-2 race coverage.
-
-## Adversarial Git states exercised with real temporary repositories
-
-Automated tests use the real installed Git CLI and temporary repositories, not a fake Git implementation.
+Before transport interruption, the implementation reported:
 
 ```text
-clean repository                         PASS
-unstaged modification                    PASS
-staged modification                      PASS
-staged + unstaged same file              PASS
-untracked file                            PASS
-detached HEAD                             PASS
-empty/new unborn repository              PASS
-file deletion                             PASS
-rename with previous-path relationship   PASS
-binary/non-text file presence             PASS
-repository path containing spaces         PASS
-stable Git-backed document ID on refresh PASS
-repository snapshot changes on Git edit  PASS
-inspection leaves .git/index unchanged   PASS
-non-repository rejection                  PASS
-repository-scoped source IDs              PASS
-multiple local-history commits            PASS
+./scripts/verify.sh                         PASS
+go test -race ./...                        PASS
+Phase-2 adversarial Git matrix             PASS
+live loopback HTTP vertical slice          PASS
 ```
 
-## Authority-boundary tests
+The preserved implementation blobs from that run are the blobs now attached to the Phase-2 branch. The one browser-script transport mismatch was not accepted blindly; recovery found and repaired the single corrupted `.hidden=true` assignment before it entered branch history.
 
-Automated server tests verify:
+## Fresh recovery-runtime Go verification
 
 ```text
-/api/state refresh observes external Git change        PASS
+go test ./internal/workstation             PASS — 16 tests
+go test ./...                              PASS
+go test -race ./...                        PASS
+go vet ./...                               PASS
+```
+
+Fresh adversarial repositories exercised the real installed Git CLI.
+
+```text
+clean repository                           PASS
+unstaged modification                      PASS
+staged modification                        PASS
+staged + unstaged same file                PASS
+untracked file                              PASS
+detached HEAD                              PASS
+unborn/new repository                      PASS
+file deletion                              PASS
+rename + previous-path relationship        PASS
+binary/non-text presence                   PASS
+repository path containing spaces          PASS
+stable Git-backed document identity        PASS
+repository-scoped identity                 PASS
+inspection leaves .git/index unchanged     PASS
+non-repository rejection                   PASS
+recent local history                       PASS
+```
+
+## Fresh authority-boundary verification
+
+```text
+external Git change appears on refresh                 PASS
 repository refresh does not advance workstation rev    PASS
-SAVE changes workstation metadata only                 PASS
+SAVE changes workstation state only                    PASS
 SAVE leaves source bytes unchanged                     PASS
 SAVE leaves Git status unchanged                       PASS
-saved project-root label cannot retarget inspector     PASS
-static export carries repository provenance            PASS
-static export includes Git-backed text documents       PASS
-static export remains read-only                        PASS
+saved project-root metadata cannot retarget inspector PASS
+/api/repository remains read-only                      PASS
+static export carries Git provenance                   PASS
+static export carries Git-backed text documents        PASS
+static export exposes no mutation surface              PASS
 ```
 
-## Live HTTP vertical slice
+## Exact durable browser-script verification
 
-A real repository was created at:
+Exact branch blob:
 
 ```text
-/tmp/llm hub phase2 real repo
+local_app/internal/workstation/web/app.js
+e46153cfcd103c3951ffdcc9f6fd7b4f02ff9f07
 ```
 
-with:
+The exact durable blob was parsed/executed in a JavaScript runtime.
+
+```text
+syntax                                                PASS
+0/1/2/3 sliders -> 4/3/2/1 columns                  PASS
+compact mode -> one column                          PASS
+structural dirty comparison                         PASS
+tool shortcut mapping                               PASS
+branch / DETACHED / UNBORN / UNKNOWN labels         PASS
+```
+
+## Fresh process-level HTTP slice
+
+A real repository whose path contained spaces was created with:
 
 ```text
 MM source.txt
@@ -84,7 +103,7 @@ MM source.txt
 ?? "new file.txt"
 ```
 
-The running Phase-2 service was exercised over loopback process HTTP:
+The running workstation was exercised over loopback with:
 
 ```text
 GET  /api/state
@@ -95,29 +114,36 @@ GET  /api/export
 Observed:
 
 ```text
-HTTP_PHASE2_VERTICAL_SLICE=PASS
-repository_id=52048804adf9ea88f0da2bac565cd598ef081dc0c4af45d2d014282dc56876ab
-head=aac6e5561636669b743e63233a17f3563852b52f
-branch=main
-clean=false
+HTTP_PHASE2_RECOVERY_SLICE=PASS
 staged=1
 unstaged=1
 untracked=2
-repository_documents=3
 workstation_revision_after_save=2
 git_status_unchanged_after_save=true
-export_sha256=48b2aec85f33e10e91b2ebbe47fd50ff8a0d8b3c0e1f16ad257ee7fcdd054c0c
+export_sha256=28fb897ae4d83357816e90adea77f39f74ba085bad3f5051af9eccbd8455f339
 ```
 
 The Git status after SAVE remained exactly:
 
 ```text
-## main
 MM source.txt
 ?? binary.bin
 ?? "new file.txt"
 ```
 
-## Destination-host acceptance retained
+## Remote branch integrity
 
-The Phase-1 execution environment limitation around direct Chromium/browser navigation to loopback is preserved as a destination-host acceptance item. Phase 2 did not reinterpret it as an application defect or redesign the workstation shell around it.
+Recovery checkpoints are append-only and fast-forwarded from the frozen Phase-1 commit. No force update was used.
+
+The final handoff must additionally verify:
+
+```text
+Phase-2 branch result commit
+phase_0 tree unchanged
+main unchanged
+only intended Phase-2 paths changed
+```
+
+## Destination-host item retained
+
+Direct real-browser navigation to the loopback service remains a destination-host acceptance item from Phase 1. It is not counted as a Phase-2 implementation failure and was not used to justify shell redesign.
