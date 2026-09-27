@@ -171,8 +171,8 @@ try:
             "source editor to close after successful write",
         )
         wait_until(
-            lambda: "source.txt" in page.locator("#unstaged-changes").inner_text(),
-            "source.txt to appear in unstaged projection",
+            lambda: "source.txt" in (page.locator("#unstaged-changes").text_content() or ""),
+            "source.txt to appear in unstaged projection DOM",
         )
         record(
             "source_bytes_written",
