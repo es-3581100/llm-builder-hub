@@ -17,9 +17,12 @@ Integrated Phase-3 history includes:
 b662b28  prevent dirty source-draft replacement
 ec3f555  non-mutating formatting/verification repair
 a01b77a  destination-host acceptance and export regressions
+5b4ab74  automated browser acceptance integration
+f6a08f0  Playwright interpreter auto-detection
+5bc6a90  hidden Git-projection acceptance fix
 ```
 
-The automated-acceptance integration line preserves both formerly divergent Phase-3 lines and replaces manual browser census prompts with machine-driven browser acceptance.
+The automated-acceptance integration line preserves both formerly divergent Phase-3 histories and replaces manual browser census prompts with machine-driven browser acceptance.
 
 ## Implemented
 
@@ -55,12 +58,47 @@ OpenCode execution
 SEAL / RUN / PUBLISH
 ```
 
+## Final Phase-3 acceptance
+
+Destination-host acceptance passed on 2026-09-27 against commit:
+
+```text
+5bc6a90efb107e86e57b59c342331dc67943ace1
+```
+
+Environment observed by the automated harness:
+
+```text
+Python:  /home/sticky-ricky/anaconda3/bin/python
+Browser: /usr/bin/thorium-browser
+Mode:    headless
+```
+
+Evidence directory:
+
+```text
+/home/sticky-ricky/.local/state/llm-hub/phase3-host-acceptance/20260927T231737Z
+```
+
+Final result:
+
+```text
+PHASE3_LOCAL_VERIFY=PASS
+PHASE3_BROWSER_AUTOMATION=PASS
+PHASE3_SOURCE_WRITE_ACCEPTANCE=PASS
+PHASE3_CONFLICT_ACCEPTANCE=PASS
+PHASE3_SAVE_WRITE_SEPARATION=PASS
+PHASE3_HOST_ACCEPTANCE=PASS
+PHASE3_COMPLETE=PASS
+```
+
 ## Status
 
 ```text
-build_status=IMPLEMENTATION_PASS
-mechanical_verification=PASS on prior checkpoint
-manual_questionnaire=REMOVED
-automated_host_acceptance=PENDING_DESTINATION_RUN
-phase3_complete=PENDING_DESTINATION_RUN
+build_status=BUILD_PASS
+mechanical_verification=PASS
+automated_host_acceptance=PASS
+phase3_complete=PASS
 ```
+
+Phase 3 is sealed. No Phase-4 work is implied by this completion.

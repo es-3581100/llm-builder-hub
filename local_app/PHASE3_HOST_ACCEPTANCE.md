@@ -1,30 +1,15 @@
 # Phase-3 Automated Host Acceptance
 
-Phase 3 no longer requires a human questionnaire.
+Phase 3 uses a fully automated destination-host acceptance path. No human questionnaire is part of the result.
 
 `scripts/host-accept-phase3.sh` creates a disposable Git repository, starts the real loopback service, and invokes `scripts/host-accept-phase3.py` to drive an actual Chromium-class browser engine with Playwright.
 
-Default browser discovery prefers:
+The accepted Phase-3 run used:
 
 ```text
-/usr/bin/thorium-browser
-thorium-browser
-chromium
-chromium-browser
-google-chrome
-google-chrome-stable
-```
-
-Override when needed:
-
-```bash
-PHASE3_BROWSER_EXECUTABLE=/path/to/chromium ./scripts/host-accept-phase3.sh
-```
-
-The browser runs headless by default. To watch the automation:
-
-```bash
-PHASE3_BROWSER_HEADLESS=0 ./scripts/host-accept-phase3.sh
+Python:  /home/sticky-ricky/anaconda3/bin/python
+Browser: /usr/bin/thorium-browser
+Mode:    headless
 ```
 
 The automated browser proves:
@@ -60,20 +45,28 @@ static export contains no mutation surface
 test repository remote configuration unchanged
 ```
 
-Evidence is written outside the repository under:
+Evidence from the accepted run:
 
 ```text
-$XDG_STATE_HOME/llm-hub/phase3-host-acceptance/<UTC>/
-or
-~/.local/state/llm-hub/phase3-host-acceptance/<UTC>/
+/home/sticky-ricky/.local/state/llm-hub/phase3-host-acceptance/20260927T231737Z
 ```
 
-There are no `y/n` prompts and no manual browser steps.
-
-A missing Python Playwright installation or Chromium-class executable is reported as `PHASE3_HOST_ACCEPTANCE_BLOCKED`; functional assertion failures return `PHASE3_HOST_ACCEPTANCE_FAIL`.
-
-Success ends with:
+Accepted implementation commit:
 
 ```text
+5bc6a90efb107e86e57b59c342331dc67943ace1
+```
+
+Final result:
+
+```text
+PHASE3_LOCAL_VERIFY=PASS
+PHASE3_BROWSER_AUTOMATION=PASS
+PHASE3_SOURCE_WRITE_ACCEPTANCE=PASS
+PHASE3_CONFLICT_ACCEPTANCE=PASS
+PHASE3_SAVE_WRITE_SEPARATION=PASS
+PHASE3_HOST_ACCEPTANCE=PASS
 PHASE3_COMPLETE=PASS
 ```
+
+Default browser discovery prefers Thorium/Chromium-class executables. `PHASE3_PYTHON` and `PHASE3_BROWSER_EXECUTABLE` remain available as explicit overrides for other hosts.
