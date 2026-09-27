@@ -1,0 +1,49 @@
+name: local-app-ci
+
+on:
+  push:
+    branches:
+      - "phase*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-local-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: local_app/go.mod
+
+      - name: Go tests
+        working-directory: local_app
+        run: go test ./...
+
+      - name: Go race tests
+        working-directory: local_app
+        run: go test -race ./...
+
+      - name: Go vet
+        working-directory: local_app
+        run: go vet ./...
+
+      - name: JavaScript tests
+        working-directory: local_app
+        run: node --test tests/*.test.cjs
+
+      - name: Build
+        working-directory: local_app
+        run: go build -o /tmp/llm-hub-local ./cmd/llm-hub-local
+
+      - name: Script syntax
+        run: |
+          bash -n local_app/scripts/*.sh
+          python3 -m py_compile local_app/scripts/*.py
