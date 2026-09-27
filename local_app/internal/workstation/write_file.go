@@ -21,6 +21,10 @@ var (
 	ErrWriteReadbackMismatch    = errors.New("write readback mismatch")
 )
 
+type RepositoryWriter interface {
+	WriteFile(context.Context, WriteFileRequest) (WriteFileResult, error)
+}
+
 type WriteFileRequest struct {
 	RepositoryID          string `json:"repository_id"`
 	DocumentID            string `json:"document_id"`

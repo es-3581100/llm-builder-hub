@@ -26,3 +26,27 @@ Before replacement, the writer rejects stale repository/document identity, delet
 Successful writes use a same-directory temporary file, sync, atomic rename, immediate byte/hash readback, and a fresh Git repository inspection. The resulting Git working-tree diff is evidence of the mutation. The Git index is not modified.
 
 This checkpoint does not add Git add/restore/reset/commit, branch operations, fetch/pull/push, merge/rebase, OpenCode execution, actors, RUN, SEAL, or PUBLISH.
+
+
+## HTTP boundary checkpoint
+
+The next checkpoint exposes the already-guarded writer at:
+
+```text
+POST /api/write-file
+```
+
+This endpoint is distinct from `POST /api/save`. A successful repository write does not advance workstation-state revision.
+
+Success returns the write result plus the fresh repository snapshot. Errors are JSON with a stable `code`:
+
+- `INVALID_REQUEST` → 400
+- `REPOSITORY_CONFLICT` → 409
+- `DOCUMENT_CONFLICT` → 409
+- `CONTENT_CONFLICT` → 409
+- `UNSUPPORTED_TARGET` → 422
+- `READBACK_MISMATCH` → 500
+- `INTERNAL_ERROR` → 500
+- `WRITE_NOT_CONFIGURED` → 404
+
+Server logs record status, code, path, and before/after content hashes, never replacement content.

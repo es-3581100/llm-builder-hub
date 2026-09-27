@@ -35,6 +35,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/state", s.getState)
 	mux.HandleFunc("GET /api/repository", s.getRepository)
 	mux.HandleFunc("POST /api/save", s.saveState)
+	mux.HandleFunc("POST /api/write-file", s.writeRepositoryFile)
 	mux.HandleFunc("GET /api/export", s.exportHTML)
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -163,6 +164,73 @@ func (s *Server) saveState(w http.ResponseWriter, r *http.Request) {
 	}
 	status = http.StatusOK
 	writeJSON(w, status, envelope)
+}
+
+type writeFileErrorEnvelope struct {
+	Error string `json:"error"`
+	Code  string `json:"code"`
+}
+
+func writeFileError(err error) (int, string) {
+	switch {
+	case errors.Is(err, ErrWriteInvalidRequest):
+		return http.StatusBadRequest, "INVALID_REQUEST"
+	case errors.Is(err, ErrWriteRepositoryConflict):
+		return http.StatusConflict, "REPOSITORY_CONFLICT"
+	case errors.Is(err, ErrWriteDocumentConflict):
+		return http.StatusConflict, "DOCUMENT_CONFLICT"
+	case errors.Is(err, ErrWriteContentConflict):
+		return http.StatusConflict, "CONTENT_CONFLICT"
+	case errors.Is(err, ErrWriteUnsupportedTarget):
+		return http.StatusUnprocessableEntity, "UNSUPPORTED_TARGET"
+	case errors.Is(err, ErrWriteReadbackMismatch):
+		return http.StatusInternalServerError, "READBACK_MISMATCH"
+	default:
+		return http.StatusInternalServerError, "INTERNAL_ERROR"
+	}
+}
+
+func (s *Server) logWriteFile(status int, code, path string, result WriteFileResult) {
+	if s.Log == nil {
+		return
+	}
+	s.Log.Printf(
+		"POST /api/write-file status=%d code=%s path=%q before_sha256=%s after_sha256=%s",
+		status, code, path, result.BeforeContentSHA256, result.AfterContentSHA256,
+	)
+}
+
+func (s *Server) writeRepositoryFile(w http.ResponseWriter, r *http.Request) {
+	writer, ok := s.Repository.(RepositoryWriter)
+	if !ok || writer == nil {
+		writeJSON(w, http.StatusNotFound, writeFileErrorEnvelope{
+			Error: "repository writing is not configured",
+			Code:  "WRITE_NOT_CONFIGURED",
+		})
+		return
+	}
+
+	defer r.Body.Close()
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20))
+	dec.DisallowUnknownFields()
+	var request WriteFileRequest
+	if err := dec.Decode(&request); err != nil {
+		status, code := http.StatusBadRequest, "INVALID_REQUEST"
+		s.logWriteFile(status, code, "", WriteFileResult{})
+		writeJSON(w, status, writeFileErrorEnvelope{Error: "invalid write request: " + err.Error(), Code: code})
+		return
+	}
+
+	result, err := writer.WriteFile(r.Context(), request)
+	if err != nil {
+		status, code := writeFileError(err)
+		s.logWriteFile(status, code, request.Path, result)
+		writeJSON(w, status, writeFileErrorEnvelope{Error: err.Error(), Code: code})
+		return
+	}
+
+	s.logWriteFile(http.StatusOK, "OK", request.Path, result)
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) exportHTML(w http.ResponseWriter, r *http.Request) {
