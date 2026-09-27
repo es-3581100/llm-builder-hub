@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import sys
 import time
+import urllib.request
 
 try:
     from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
@@ -15,6 +16,14 @@ except Exception as exc:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def server_workstation_revision(base_url: str) -> int:
+    """Read workstation revision straight from the service, not the client DOM."""
+    url = f"{base_url.rstrip('/')}/api/state"
+    with urllib.request.urlopen(url, timeout=10) as response:
+        payload = json.load(response)
+    return int(payload["state"]["revision"])
 
 
 def wait_no_dialog(page, action):
@@ -87,7 +96,6 @@ def main():
             source_article.locator('[data-action="toggle-source-edit"]').click()
             textarea = source_article.locator("textarea")
             textarea.fill("phase3 browser write\nline two\n")
-            source_article.locator('[data-state="source-draft"]')
             if source_article.get_attribute("data-state") != "source-draft":
                 raise AssertionError("source.txt did not enter source-draft state")
             report["checks"]["source_edit"] = True
@@ -112,6 +120,8 @@ def main():
             assert_textarea_value(source_article, "phase3 browser write\nline two\n")
             report["checks"]["source_refresh_block"] = True
 
+            server_revision_before_write = server_workstation_revision(args.url)
+            client_revision_before_write = page.locator("#revision").inner_text()
             source_article.locator('[data-action="write-file"]').click()
             page.wait_for_function(
                 """() => {
@@ -128,6 +138,25 @@ def main():
                 """() => document.querySelector("#repository-status")?.dataset.repositoryClean === "false" """
             )
             report["checks"]["write_success"] = True
+
+            page.wait_for_timeout(150)
+            server_revision_after_write = server_workstation_revision(args.url)
+            client_revision_after_write = page.locator("#revision").inner_text()
+            report["revision_before_write"] = server_revision_before_write
+            report["revision_after_write"] = server_revision_after_write
+            report["client_revision_before_write"] = client_revision_before_write
+            report["client_revision_after_write"] = client_revision_after_write
+            if server_revision_after_write != server_revision_before_write:
+                raise AssertionError(
+                    "WRITE FILE advanced workstation revision "
+                    f"{server_revision_before_write} -> {server_revision_after_write}"
+                )
+            if client_revision_after_write != client_revision_before_write:
+                raise AssertionError(
+                    "WRITE FILE changed the rendered workstation revision "
+                    f"{client_revision_before_write!r} -> {client_revision_after_write!r}"
+                )
+            report["checks"]["write_revision_unchanged"] = True
 
             conflict_article = repo_article(page, "conflict-ui.txt")
             conflict_article.locator('[data-action="toggle-source-edit"]').click()

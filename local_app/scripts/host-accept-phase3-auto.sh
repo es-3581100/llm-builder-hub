@@ -48,6 +48,12 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${HOST_EVIDENCE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/llm-hub/phase3-auto-acceptance/${STAMP}}"
 mkdir -p "$EVIDENCE_DIR"
 chmod 700 "$EVIDENCE_DIR"
+case "$(cd "$EVIDENCE_DIR" && pwd -P)/" in
+  "$(cd "$ROOT" && pwd -P)/"*)
+    echo "PHASE3_AUTO_ACCEPTANCE_BLOCKED: evidence directory must live outside the repository: $EVIDENCE_DIR" >&2
+    exit 2
+    ;;
+esac
 
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/llm-hub-phase3-auto.XXXXXX")"
 SERVICE_PID=""
@@ -140,8 +146,8 @@ cmp -s "$EVIDENCE_DIR/conflict-expected.txt" "$TEST_REPO/conflict-ui.txt" || {
   exit 1
 }
 
-grep -F 'POST /api/write-file status=200 code=OK path="source.txt"' "$EVIDENCE_DIR/service.log" >/dev/null || {
-  echo "PHASE3_AUTO_ACCEPTANCE_FAIL: missing successful source write log" >&2
+grep -E 'POST /api/write-file status=200 code=OK path="source\.txt" before_sha256=[0-9a-f]{64} after_sha256=[0-9a-f]{64}' "$EVIDENCE_DIR/service.log" >/dev/null || {
+  echo "PHASE3_AUTO_ACCEPTANCE_FAIL: missing successful source write log with before/after content hashes" >&2
   exit 1
 }
 grep -F 'POST /api/write-file status=409 code=CONTENT_CONFLICT path="conflict-ui.txt"' "$EVIDENCE_DIR/service.log" >/dev/null || {
@@ -152,6 +158,13 @@ grep -F 'POST /api/save status=200' "$EVIDENCE_DIR/service.log" >/dev/null || {
   echo "PHASE3_AUTO_ACCEPTANCE_FAIL: missing workstation SAVE log" >&2
   exit 1
 }
+
+for leaked in 'phase3 browser write' 'line two' 'browser stale draft' 'external edit wins'; do
+  if grep -Fq "$leaked" "$EVIDENCE_DIR/service.log"; then
+    echo "PHASE3_AUTO_ACCEPTANCE_FAIL: service log leaked replacement content: $leaked" >&2
+    exit 1
+  fi
+done
 
 git -C "$TEST_REPO" diff --no-color --no-ext-diff --no-textconv -- >"$EVIDENCE_DIR/final-working-tree.diff"
 git -C "$TEST_REPO" status --porcelain=v1 --untracked-files=all >"$EVIDENCE_DIR/final-status.txt"
@@ -165,6 +178,7 @@ required=[
   "source_switch_block",
   "source_refresh_block",
   "write_success",
+  "write_revision_unchanged",
   "content_conflict",
   "conflict_draft_preserved",
   "cancel_nonmutating",
@@ -174,6 +188,12 @@ missing=[key for key in required if report.get("checks",{}).get(key) is not True
 if report.get("result") != "PASS" or missing:
     raise SystemExit(f"browser report incomplete: result={report.get('result')} missing={missing}")
 PY
+
+if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
+  echo "PHASE3_AUTO_ACCEPTANCE_FAIL: acceptance left the repository worktree dirty" >&2
+  git -C "$ROOT" status --short >&2
+  exit 1
+fi
 
 {
   echo "tested_head=$(git -C "$ROOT" rev-parse HEAD)"
