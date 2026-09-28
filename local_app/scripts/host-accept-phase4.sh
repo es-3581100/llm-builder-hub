@@ -308,7 +308,10 @@ COMMIT_INDEX="$(json_get commit.after_index_sha256)"
 [[ "$STAGE1_INDEX" != "$INDEX_SHA_BEFORE" ]] || failed "index identity did not change on STAGE FILE"
 [[ "$UNSTAGE_INDEX" != "$STAGE1_INDEX" ]] || failed "index identity did not change on UNSTAGE FILE"
 [[ "$RESTAGE_INDEX" != "$UNSTAGE_INDEX" ]] || failed "index identity did not change on the second STAGE FILE"
-[[ "$RESTAGE_INDEX" == "$COMMIT_INDEX" && "$COMMIT_INDEX" == "$INDEX_SHA_AFTER" ]] || failed "index identity drifted outside index mutations: staged=$RESTAGE_INDEX commit=$COMMIT_INDEX disk=$INDEX_SHA_AFTER"
+# git write-tree legitimately rewrites .git/index (cache-tree), so the index
+# identity is not expected to survive COMMIT STAGED unchanged. What must hold is
+# that the identity reported for the commit is the identity on disk afterwards.
+[[ "$COMMIT_INDEX" == "$INDEX_SHA_AFTER" ]] || failed "index identity reported for the commit does not match the index on disk: commit=$COMMIT_INDEX disk=$INDEX_SHA_AFTER restaged=$RESTAGE_INDEX"
 assert_browser_check stage_index_sha_matches_disk
 assert_browser_check unstage_index_sha_matches_disk
 pass_property PHASE4_INDEX_IDENTITY
