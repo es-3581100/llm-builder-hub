@@ -656,10 +656,15 @@ try:
             after_commit["branch"] == pre_commit["branch"] and after_commit["branch_ref"] == pre_commit["branch_ref"],
             f"before={pre_commit['branch']} after={after_commit['branch']}",
         )
+        # git write-tree legitimately rewrites .git/index (cache-tree), so the
+        # identity is not expected to survive a commit unchanged. What must hold
+        # is that the identity reported after the commit is the identity actually
+        # on disk, and that it is settled rather than a pre-write-tree reading.
         record(
-            "commit_leaves_index_untouched",
-            after_commit["index_sha256"] == pre_commit["index_sha256"] == commit_payload["after_index_sha256"] == index_sha(),
-            f"disk={after_commit['index_sha256']} api={commit_payload['after_index_sha256']}",
+            "commit_reports_settled_index_identity",
+            after_commit["index_sha256"] == commit_payload["after_index_sha256"] == index_sha(),
+            f"disk={after_commit['index_sha256']} api={commit_payload['after_index_sha256']}"
+            f" index_before={pre_commit['index_sha256']}",
         )
         record(
             "commit_consumes_the_staged_snapshot",

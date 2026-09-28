@@ -337,7 +337,7 @@ git_ro show "$HEAD_AFTER:unrelated.txt" >"$EVIDENCE_DIR/committed-unrelated.txt"
 cmp -s <(printf '%s' "$UNRELATED_BASELINE") "$EVIDENCE_DIR/committed-unrelated.txt" || failed "the commit contains the unrelated file, which was never staged"
 [[ "$(git_ro show --format=%s --no-patch "$HEAD_AFTER")" == "$COMMIT_MESSAGE" ]] || failed "commit subject is not the exact supplied message"
 assert_browser_check commit_advances_head_only
-assert_browser_check commit_leaves_index_untouched
+assert_browser_check commit_reports_settled_index_identity
 pass_property PHASE4_STAGE_ACCEPTANCE
 pass_property PHASE4_UNSTAGE_ACCEPTANCE
 pass_property PHASE4_COMMIT_ACCEPTANCE
