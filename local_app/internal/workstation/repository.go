@@ -172,21 +172,12 @@ func (r *GitRepository) Inspect(ctx context.Context) (RepositorySnapshot, error)
 	sort.Strings(roots)
 	repositoryID := digestStrings("llm-hub-repository-v1", root, gitDir, objectFormat, strings.Join(roots, ","))
 
-	// Phase-4 index identity. An empty value means the index path is
-	// unavailable or no index file exists; Phase-4 mutation rejects that
-	// repository form instead of guessing an index identity.
-	indexSHA256, err := r.indexIdentity(ctx, configuredRoot)
-	if err != nil {
-		return RepositorySnapshot{}, fmt.Errorf("resolve index identity: %w", err)
-	}
-
 	snapshot := RepositorySnapshot{
 		Authority:        "GIT",
 		RepositoryID:     repositoryID,
 		Root:             root,
 		GitDir:           gitDir,
 		ObjectFormat:     objectFormat,
-		IndexSHA256:      indexSHA256,
 		DocumentLimit:    r.maxDocuments,
 		MaxDocumentBytes: r.maxDocumentBytes,
 	}
@@ -260,6 +251,18 @@ func (r *GitRepository) Inspect(ctx context.Context) (RepositorySnapshot, error)
 			return RepositorySnapshot{}, err
 		}
 	}
+
+	// Phase-4 index identity. This is read last, on purpose: the read-only
+	// inspection above can refresh the index stat cache and rewrite
+	// .git/index, so an identity captured earlier would not describe the
+	// bytes the caller would actually find on disk. An empty value means
+	// the index path is unavailable or no index file exists; Phase-4
+	// mutation rejects that repository form instead of guessing.
+	indexSHA256, err := r.indexIdentity(ctx, configuredRoot)
+	if err != nil {
+		return RepositorySnapshot{}, fmt.Errorf("resolve index identity: %w", err)
+	}
+	snapshot.IndexSHA256 = indexSHA256
 
 	snapshot.SnapshotSHA256 = repositorySnapshotHash(snapshot)
 	return snapshot, nil
