@@ -89,6 +89,7 @@ type RepositorySnapshot struct {
 	HeadCommit           string                   `json:"head_commit,omitempty"`
 	HeadShort            string                   `json:"head_short,omitempty"`
 	Branch               string                   `json:"branch,omitempty"`
+	IndexSHA256          string                   `json:"index_sha256,omitempty"`
 	Detached             bool                     `json:"detached"`
 	Unborn               bool                     `json:"unborn"`
 	Clean                bool                     `json:"clean"`
@@ -114,13 +115,23 @@ func NewGitRepository(root string) *GitRepository {
 	}
 }
 
-func (r *GitRepository) Inspect(ctx context.Context) (RepositorySnapshot, error) {
+// commandRoot resolves the absolute, symlink-free root that Git is invoked
+// with. Inspect and the Phase-4 controller must observe the same repository.
+func (r *GitRepository) commandRoot() (string, error) {
 	configuredRoot, err := filepath.Abs(r.root)
 	if err != nil {
-		return RepositorySnapshot{}, fmt.Errorf("resolve repository root: %w", err)
+		return "", fmt.Errorf("resolve repository root: %w", err)
 	}
 	if resolved, err := filepath.EvalSymlinks(configuredRoot); err == nil {
 		configuredRoot = resolved
+	}
+	return configuredRoot, nil
+}
+
+func (r *GitRepository) Inspect(ctx context.Context) (RepositorySnapshot, error) {
+	configuredRoot, err := r.commandRoot()
+	if err != nil {
+		return RepositorySnapshot{}, err
 	}
 
 	bareText, err := r.gitText(ctx, configuredRoot, "rev-parse", "--is-bare-repository")
@@ -161,12 +172,21 @@ func (r *GitRepository) Inspect(ctx context.Context) (RepositorySnapshot, error)
 	sort.Strings(roots)
 	repositoryID := digestStrings("llm-hub-repository-v1", root, gitDir, objectFormat, strings.Join(roots, ","))
 
+	// Phase-4 index identity. An empty value means the index path is
+	// unavailable or no index file exists; Phase-4 mutation rejects that
+	// repository form instead of guessing an index identity.
+	indexSHA256, err := r.indexIdentity(ctx, configuredRoot)
+	if err != nil {
+		return RepositorySnapshot{}, fmt.Errorf("resolve index identity: %w", err)
+	}
+
 	snapshot := RepositorySnapshot{
 		Authority:        "GIT",
 		RepositoryID:     repositoryID,
 		Root:             root,
 		GitDir:           gitDir,
 		ObjectFormat:     objectFormat,
+		IndexSHA256:      indexSHA256,
 		DocumentLimit:    r.maxDocuments,
 		MaxDocumentBytes: r.maxDocumentBytes,
 	}
@@ -243,6 +263,51 @@ func (r *GitRepository) Inspect(ctx context.Context) (RepositorySnapshot, error)
 
 	snapshot.SnapshotSHA256 = repositorySnapshotHash(snapshot)
 	return snapshot, nil
+}
+
+// indexIdentity returns the SHA-256 of the raw Git index bytes, resolved
+// deterministically through Git itself. An empty identity means the index path
+// could not be resolved or no index file exists; Phase-4 mutation treats that
+// repository form as ineligible instead of guessing.
+func (r *GitRepository) indexIdentity(ctx context.Context, root string) (string, error) {
+	indexPath, err := r.indexPath(ctx, root)
+	if err != nil || indexPath == "" {
+		return "", err
+	}
+	raw, err := os.ReadFile(indexPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("read index %q: %w", indexPath, err)
+	}
+	return contentSHA256(raw), nil
+}
+
+// indexPath resolves the index location through Git plumbing only, so linked
+// worktrees and alternative git directories resolve to their own index.
+func (r *GitRepository) indexPath(ctx context.Context, root string) (string, error) {
+	absolute, err := r.gitText(ctx, root, "rev-parse", "--path-format=absolute", "--git-path", "index")
+	if err == nil {
+		if candidate := strings.TrimSpace(absolute); candidate != "" {
+			return filepath.Clean(candidate), nil
+		}
+		return "", nil
+	}
+	// Git older than 2.31 does not understand --path-format; fall back to the
+	// relative form, which Git reports against the command working directory.
+	legacy, legacyErr := r.gitText(ctx, root, "rev-parse", "--git-path", "index")
+	if legacyErr != nil {
+		return "", err
+	}
+	candidate := strings.TrimSpace(legacy)
+	if candidate == "" {
+		return "", nil
+	}
+	if filepath.IsAbs(candidate) {
+		return filepath.Clean(candidate), nil
+	}
+	return filepath.Join(root, filepath.FromSlash(candidate)), nil
 }
 
 func (r *GitRepository) loadFiles(ctx context.Context, commandRoot string, snapshot *RepositorySnapshot) error {
