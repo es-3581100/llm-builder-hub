@@ -569,8 +569,10 @@ try:
         after_cancel = observe("after-draft-cancel")
         record(
             "cancel_draft_writes_nothing",
-            after_cancel["unrelated_bytes"] == UNRELATED_BASELINE and after_cancel["index_sha256"] == before_blocks["index_sha256"],
-            f"unrelated={after_cancel['unrelated_bytes']!r}",
+            after_cancel["unrelated_bytes"] == before_blocks["unrelated_bytes"]
+            and after_cancel["index_sha256"] == before_blocks["index_sha256"],
+            f"before={before_blocks['unrelated_bytes']!r} after={after_cancel['unrelated_bytes']!r}"
+            f" index_before={before_blocks['index_sha256']} index_after={after_cancel['index_sha256']}",
         )
 
         # ---- 409 conflict: desynchronize the browser from the worktree -----
