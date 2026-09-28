@@ -299,6 +299,65 @@ test('WRITE FILE never implies STAGE FILE', () => {
   }
 });
 
+test('the WRITE FILE button binding is declared once in enclosing scope before every use', () => {
+  // Regression: the WRITE FILE element was declared with `const` inside the first
+  // `if (editing) {` block and then read from a sibling `if (editing) {` block, so
+  // under "use strict" every keystroke threw `ReferenceError: write is not defined`
+  // and the button's `disabled` flag was never cleared. The exported helpers are
+  // pure and cannot observe DOM construction, so this asserts the binding's shape
+  // in the source instead.
+  const body = functionBody(readSource(APP_PATH), 'renderDocuments');
+
+  // A bare identifier only. Word characters plus the quote, backtick and hyphen
+  // characters that cannot appear inside this identifier are all excluded, so
+  // `writeRepositoryFile` (a different function), `"write-file"` and
+  // `"source-write-error"` (string data) are not counted. A trailing "." stays
+  // allowed because `write.type` is a genuine use of the binding.
+  const identifier = /(?<![A-Za-z0-9_$'"`\-.])write(?![A-Za-z0-9_$'"`-])/g;
+  const declarations = [];
+  const usages = [];
+  for (const match of body.matchAll(identifier)) {
+    const declared = /\b(?:let|const|var)\s+$/.test(body.slice(0, match.index));
+    (declared ? declarations : usages).push(match.index);
+  }
+
+  const lines = body.split('\n');
+  const lineAt = index => body.slice(0, index).split('\n').length;
+  const found = index => 'line ' + lineAt(index) + ': ' + lines[lineAt(index) - 1].trim();
+  const indentAt = index => lines[lineAt(index) - 1].match(/^[ \t]*/)[0].length;
+
+  assert.equal(
+    declarations.length, 1,
+    'renderDocuments must declare the write binding exactly once; found ' +
+    (declarations.length ? declarations.map(found).join(' | ') : 'no declaration')
+  );
+  // Non-vacuity: the binding the regression concerns has to be observable.
+  assert.ok(usages.length > 0, 'expected renderDocuments to use the write binding');
+
+  // The guarding block is the `if (editing)` that introduces WRITE FILE, i.e. the
+  // last one before the first use. The first `if (editing)` in the body belongs to
+  // the EDIT SOURCE toggle listener and would be the wrong anchor.
+  const declaration = declarations[0];
+  const guard = body.lastIndexOf('if (editing)', usages[0]);
+  assert.notEqual(guard, -1, 'expected an if (editing) block that builds WRITE FILE');
+  assert.ok(
+    declaration < guard,
+    'the write binding must be declared before the if (editing) block that builds WRITE FILE; ' +
+    'declared at ' + found(declaration) + ' but the block starts at ' + found(guard)
+  );
+  for (const usage of usages) {
+    assert.ok(usage > declaration, 'the write binding is used before it is declared at ' + found(usage));
+  }
+  // The enclosing-scope claim, as a nesting check: a binding declared inside the
+  // `if (editing) {` body is indented deeper than the `if` statement itself.
+  assert.ok(
+    indentAt(declaration) <= indentAt(guard),
+    'the write binding must live in the scope enclosing the if (editing) block, not inside it; ' +
+    'declared at ' + found(declaration) + ' (indent ' + indentAt(declaration) + ') which is nested ' +
+    'deeper than ' + found(guard) + ' (indent ' + indentAt(guard) + ')'
+  );
+});
+
 test('STAGE FILE never implies COMMIT STAGED', () => {
   const body = functionBody(readSource(APP_PATH), 'stageRepositoryFile');
   assert.ok(body.includes('/api/stage-file'), 'STAGE FILE must call the stage endpoint');

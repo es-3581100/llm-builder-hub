@@ -405,8 +405,9 @@ function renderDocuments() {
       });
       header.append(edit);
 
+      let write = null;
       if (editing) {
-        const write = document.createElement("button");
+        write = document.createElement("button");
         write.type="button";
         write.dataset.action="write-file";
         write.textContent="WRITE FILE";
