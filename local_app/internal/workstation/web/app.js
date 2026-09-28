@@ -33,6 +33,18 @@ let repositoryEdit = null;
 let activeTools = {workspace: 1, project: 1, branch: 1};
 let drawerState = "closed";
 let pendingRefresh = false;
+let commitMessageDraft = "";
+let commitError = {action:"", code:"", status:"", message:""};
+let gitControlInFlight = null;
+
+// Phase 4 local Git control is a third authority layer. It is never implied by
+// SAVE CHANGES or WRITE FILE, and it never implies a commit. These names are the
+// only local Git actions the browser can dispatch.
+const LOCAL_GIT_ACTIONS = {
+  "stage-file": "STAGE FILE",
+  "unstage-file": "UNSTAGE FILE",
+  "commit-staged": "COMMIT STAGED"
+};
 
 function isDirty() { return saved && draft && !statesEqual(saved, draft); }
 
@@ -53,6 +65,142 @@ function makeRepositoryWriteRequest(edit) {
     expected_content_sha256: edit.expectedContentSHA256,
     content: edit.content
   };
+}
+
+// Phase 4 browser helpers below are pure: they take the current repository
+// snapshot (and at most one file relationship) and answer a question. They
+// never touch the DOM, never perform a request, and are unit-testable from Node
+// without a browser. They only decide which affordance is offered; the server
+// re-verifies every identity and every eligibility rule.
+
+// changeKind mirrors the server-side change classification so the browser reads
+// the same status the snapshot reports. A missing status is "none", not
+// "modified": an absent status is never eligible.
+function changeKind(status) {
+  if (!status) return "none";
+  if (typeof status === "object") return status.kind || "none";
+  const text = String(status);
+  if (!text) return "none";
+  switch (text[0]) {
+    case "A": return "added";
+    case "M": return "modified";
+    case "D": return "deleted";
+    case "R": return "renamed";
+    case "C": return "copied";
+    case "T": return "type_changed";
+    case "U": return "unmerged";
+    default: return "other";
+  }
+}
+
+// localGitControlReady is the browser-side precondition for binding any
+// mutating local Git request: the snapshot must carry an identity the server
+// also re-verifies. Without it the expected_* fields cannot be bound at all.
+function localGitControlReady(repository) {
+  if (!repository) return false;
+  return !!repository.repository_id
+    && !!repository.head_commit
+    && !!repository.branch
+    && !!repository.index_sha256
+    && !repository.detached
+    && !repository.unborn;
+}
+
+// eligibleTrackedSource is the shared file gate: an existing regular non-symlink
+// text file that Git already tracks. Untracked, missing, symlink, non-regular,
+// binary, and oversized targets are all rejected before any status is read.
+function eligibleTrackedSource(file) {
+  if (!file || !file.path) return false;
+  if (!file.tracked) return false;
+  if (file.untracked) return false;
+  if (!file.exists) return false;
+  if (!file.regular) return false;
+  if (file.symlink) return false;
+  if (file.binary) return false;
+  if (file.too_large) return false;
+  return true;
+}
+
+// canStageFile is true only for an unstaged tracked modification. A file that
+// already has a staged entry is not stageable: that is UNSTAGE territory.
+function canStageFile(file, repository) {
+  if (!eligibleTrackedSource(file)) return false;
+  if (!localGitControlReady(repository)) return false;
+  if (file.staged_status) return false;
+  return changeKind(file.unstaged_status) === "modified";
+}
+
+// canUnstageFile is true only for a staged tracked modification. Worktree
+// content is irrelevant to an index-only restore.
+function canUnstageFile(file, repository) {
+  if (!file || !file.path || !file.tracked) return false;
+  if (!localGitControlReady(repository)) return false;
+  return changeKind(file.staged_status) === "modified";
+}
+
+// canCommit requires an attached branch and a non-empty staged snapshot. A
+// detached or unborn HEAD has no local branch to advance.
+function canCommit(repository) {
+  if (!localGitControlReady(repository)) return false;
+  return Array.isArray(repository.staged) && repository.staged.length > 0;
+}
+
+// Request builders bind the observed snapshot identity only. They never invent
+// a field, never trim or extend the commit message, and return null when the
+// request could not bind a complete identity.
+function makeStageRequest(file, repository) {
+  if (!canStageFile(file, repository)) return null;
+  if (!file.content_sha256) return null;
+  return {
+    repository_id: repository.repository_id,
+    path: file.path,
+    expected_head_commit: repository.head_commit,
+    expected_branch: repository.branch,
+    expected_index_sha256: repository.index_sha256,
+    expected_worktree_sha256: file.content_sha256
+  };
+}
+
+function makeUnstageRequest(file, repository) {
+  if (!canUnstageFile(file, repository)) return null;
+  return {
+    repository_id: repository.repository_id,
+    path: file.path,
+    expected_head_commit: repository.head_commit,
+    expected_branch: repository.branch,
+    expected_index_sha256: repository.index_sha256
+  };
+}
+
+function makeCommitRequest(repository, commitMessage) {
+  if (!canCommit(repository)) return null;
+  if (typeof commitMessage !== "string" || !commitMessage) return null;
+  return {
+    repository_id: repository.repository_id,
+    expected_head_commit: repository.head_commit,
+    expected_branch: repository.branch,
+    expected_index_sha256: repository.index_sha256,
+    commit_message: commitMessage
+  };
+}
+
+// A dirty repository source draft is an unfinished worktree mutation. It blocks
+// every local Git action until it is written or explicitly cancelled, so a
+// stage/unstage/commit can never race an unsaved source edit.
+function canRunLocalGitControl(action, edit) {
+  if (!Object.prototype.hasOwnProperty.call(LOCAL_GIT_ACTIONS, action)) return false;
+  return !repositoryDraftDirty(edit);
+}
+
+function sourceFileForPath(repository, path) {
+  if (!repository || !Array.isArray(repository.files) || !path) return null;
+  return repository.files.find(file => file.path === path) || null;
+}
+
+function stagedSummaryText(repository) {
+  const staged = repository && Array.isArray(repository.staged) ? repository.staged : [];
+  if (!staged.length) return "staged: 0\n(none)";
+  return `staged: ${staged.length}\n${staged.map(change => `${change.status} ${change.path}`).join("\n")}`;
 }
 
 function setSaveIndicator(status, label) {
@@ -354,6 +502,97 @@ function showSourceError(err) {
   window.alert(err.message || String(err));
 }
 
+// Phase 4 local Git control. Every failure — 409 conflict, 400 invalid
+// request, 422 unsupported target/state, 404, 500 — is surfaced with its code
+// in #commit-error, and the local repository snapshot is deliberately NOT
+// replaced, so a conflict can never silently refresh user state away.
+function setCommitControlError(action, code, status, message) {
+  commitError = {action: action || "", code: code || "", status: status || "", message: message || ""};
+  renderCommitPanel();
+}
+
+function showGitControlError(err) {
+  console.error(err);
+  setCommitControlError(commitError.action, commitError.code || "GIT_CONTROL_FAILED", commitError.status, String(err.message || err));
+  window.alert(err.message || String(err));
+}
+
+function guardLocalGitControl(action) {
+  if (canRunLocalGitControl(action, repositoryEdit)) return true;
+  window.alert(`SOURCE DRAFT exists. WRITE FILE or CANCEL SOURCE EDIT before ${LOCAL_GIT_ACTIONS[action]}.`);
+  return false;
+}
+
+async function runLocalGitControl(action, endpoint, body, path) {
+  if (!body) {
+    setCommitControlError(action, "INVALID_REQUEST", "", `${LOCAL_GIT_ACTIONS[action]} could not bind the current repository identity.`);
+    return;
+  }
+  gitControlInFlight = {action, path: path || ""};
+  renderAll();
+  let res;
+  try {
+    res = await fetch(endpoint, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
+  } catch (err) {
+    gitControlInFlight = null;
+    setCommitControlError(action, "NETWORK_ERROR", "", String(err.message || err));
+    return;
+  }
+  if (!res.ok) {
+    let code = "GIT_CONTROL_FAILED";
+    let message = `${LOCAL_GIT_ACTIONS[action]} failed with HTTP ${res.status}`;
+    try {
+      const payload = await res.json();
+      code = payload.code || code;
+      message = payload.error || message;
+    } catch (_) {}
+    gitControlInFlight = null;
+    setCommitControlError(action, code, String(res.status), message);
+    return;
+  }
+  const result = await res.json();
+  repository = result.repository;
+  gitControlInFlight = null;
+  if (action === "commit-staged") commitMessageDraft = "";
+  setCommitControlError("", "", "", "");
+  renderAll();
+}
+
+async function stageRepositoryFile(file) {
+  if (!guardLocalGitControl("stage-file")) return;
+  await runLocalGitControl("stage-file", "/api/stage-file", makeStageRequest(file, repository), file && file.path);
+}
+
+async function unstageRepositoryFile(file) {
+  if (!guardLocalGitControl("unstage-file")) return;
+  await runLocalGitControl("unstage-file", "/api/unstage-file", makeUnstageRequest(file, repository), file && file.path);
+}
+
+async function commitStagedRepository() {
+  if (!guardLocalGitControl("commit-staged")) return;
+  await runLocalGitControl("commit-staged", "/api/commit", makeCommitRequest(repository, commitMessageDraft), "");
+}
+
+function localGitActionButton(action, file) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.action = action;
+  button.dataset.sourcePath = file.path;
+  button.dataset.commitControl = "true";
+  button.textContent = LOCAL_GIT_ACTIONS[action];
+  button.disabled = !!gitControlInFlight;
+  button.addEventListener("click", ev => {
+    ev.stopPropagation();
+    if (action === "stage-file") stageRepositoryFile(file).catch(showGitControlError);
+    else unstageRepositoryFile(file).catch(showGitControlError);
+  });
+  return button;
+}
+
 function renderSpines() {
   for (const slider of draft.sliders) {
     const spine = document.querySelector(`[data-tool-spine="${slider.id}"]`);
@@ -461,8 +700,8 @@ function renderRepository() {
   document.getElementById("untracked-summary").textContent=`Untracked files (${repository.untracked.length})`;
   document.getElementById("history-summary").textContent=`Recent local history (${repository.history.length})`;
   document.getElementById("relationships-summary").textContent=`Source relationships (${repository.files.length})`;
-  renderChangeList(document.getElementById("staged-changes"), repository.staged);
-  renderChangeList(document.getElementById("unstaged-changes"), repository.unstaged);
+  renderChangeList(document.getElementById("staged-changes"), repository.staged, "unstage-file");
+  renderChangeList(document.getElementById("unstaged-changes"), repository.unstaged, "stage-file");
   document.getElementById("staged-diff").textContent=repository.staged_diff || "<none>";
   document.getElementById("unstaged-diff").textContent=repository.unstaged_diff || "<none>";
   const untracked = document.getElementById("untracked-files"); untracked.replaceChildren();
@@ -479,16 +718,56 @@ function renderRepository() {
     if(file.binary) flags.push("binary");
     if(file.too_large) flags.push("too-large");
     if(file.symlink) flags.push(`symlink:${file.symlink_target}`);
-    row.textContent=`${flags.length ? `[${flags.join(", ")}] ` : ""}${file.path}${file.previous_path ? ` ← ${file.previous_path}` : ""}${file.document_id ? ` → ${file.document_id}` : ""}`;
+    const label=document.createElement("span");
+    label.textContent=`${flags.length ? `[${flags.join(", ")}] ` : ""}${file.path}${file.previous_path ? ` ← ${file.previous_path}` : ""}${file.document_id ? ` → ${file.document_id}` : ""}`;
+    row.append(label);
+    if(canStageFile(file, repository)) row.append(localGitActionButton("stage-file", file));
+    if(canUnstageFile(file, repository)) row.append(localGitActionButton("unstage-file", file));
     relationships.append(row);
   }
 }
 
-function renderChangeList(root, changes) {
+function renderCommitPanel() {
+  const panel = document.getElementById("commit-panel");
+  if (!panel) return;
+  panel.hidden = !repository;
+  const ready = canCommit(repository);
+  panel.dataset.commitReady = String(ready);
+  panel.dataset.commitInFlight = String(!!gitControlInFlight);
+  document.getElementById("commit-branch").textContent = `branch: ${repository ? repositoryDisplayBranch(repository) : "—"}`;
+  document.getElementById("commit-head").textContent = `HEAD: ${repository ? (repository.head_commit || "UNBORN") : "—"}`;
+  document.getElementById("commit-index").textContent = `index sha256: ${repository && repository.index_sha256 ? repository.index_sha256 : "—"}`;
+  const summary = document.getElementById("commit-staged-summary");
+  summary.dataset.stagedCount = String(repository && Array.isArray(repository.staged) ? repository.staged.length : 0);
+  summary.textContent = stagedSummaryText(repository);
+  // The commit message is a browser-local draft. It is never workstation state,
+  // so it survives every re-render and never marks the workstation dirty.
+  const message = document.getElementById("commit-message");
+  if (message.value !== commitMessageDraft) message.value = commitMessageDraft;
+  message.disabled = !!(gitControlInFlight && gitControlInFlight.action === "commit-staged");
+  const button = document.getElementById("commit-btn");
+  button.disabled = !ready || !!gitControlInFlight;
+  const error = document.getElementById("commit-error");
+  error.hidden = !commitError.code;
+  error.dataset.errorCode = commitError.code;
+  error.dataset.errorStatus = commitError.status;
+  error.dataset.errorAction = commitError.action;
+  error.textContent = commitError.code
+    ? `${commitError.action ? LOCAL_GIT_ACTIONS[commitError.action] || commitError.action : "LOCAL GIT CONTROL"} BLOCKED: ${commitError.code}${commitError.message ? ` — ${commitError.message}` : ""}`
+    : "";
+}
+
+function renderChangeList(root, changes, action) {
   root.replaceChildren();
   for (const change of changes) {
     const row=document.createElement("div"); row.className="repository-change";
-    row.textContent=`${change.status} ${change.previous_path ? `${change.previous_path} → ` : ""}${change.path}`;
+    row.dataset.sourcePath=change.path;
+    const label=document.createElement("span");
+    label.textContent=`${change.status} ${change.previous_path ? `${change.previous_path} → ` : ""}${change.path}`;
+    row.append(label);
+    const file=sourceFileForPath(repository, change.path);
+    if(action === "stage-file" && canStageFile(file, repository)) row.append(localGitActionButton("stage-file", file));
+    if(action === "unstage-file" && canUnstageFile(file, repository)) row.append(localGitActionButton("unstage-file", file));
     root.append(row);
   }
 }
@@ -497,6 +776,7 @@ function renderAll() {
   renderGeometry();
   renderMetadata();
   renderRepository();
+  renderCommitPanel();
   syncProjectInputs();
   renderSpines();
   renderSliderViews();
@@ -542,6 +822,10 @@ function bind() {
   document.getElementById("project-name-input").addEventListener("input",e=>{draft.project.name=e.target.value;updateDirtyIndicator();renderMetadata();});
   document.getElementById("project-root-input").addEventListener("input",e=>{draft.project.root=e.target.value;updateDirtyIndicator();renderMetadata();});
   document.getElementById("project-branch-input").addEventListener("input",e=>{draft.project.branch=e.target.value;updateDirtyIndicator();renderMetadata();});
+  // The commit message is a browser-local draft only: it never touches draft/saved
+  // state, so it can never mark the workstation dirty or enable SAVE CHANGES.
+  document.getElementById("commit-message").addEventListener("input",e=>{commitMessageDraft=e.target.value;});
+  document.getElementById("commit-btn").addEventListener("click",()=>commitStagedRepository().catch(showGitControlError));
   document.getElementById("tool-slider-select").addEventListener("change",renderToolEditor);
   window.addEventListener("resize",renderGeometry);
   window.addEventListener("keydown",event=>{
@@ -559,4 +843,4 @@ function bind() {
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded",()=>{bind();loadAuthoritative().catch(showError);});
 }
-if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick,repositoryDraftDirty,canStartRepositoryEdit,makeRepositoryWriteRequest};
+if (typeof module !== "undefined") module.exports={columnsForDepth,statesEqual,shortcutMatches,repositoryDisplayBranch,shouldRerenderAfterDocumentClick,repositoryDraftDirty,canStartRepositoryEdit,makeRepositoryWriteRequest,LOCAL_GIT_ACTIONS,changeKind,localGitControlReady,eligibleTrackedSource,canStageFile,canUnstageFile,canCommit,canRunLocalGitControl,makeStageRequest,makeUnstageRequest,makeCommitRequest,sourceFileForPath,stagedSummaryText};

@@ -86,6 +86,21 @@
       <details><summary id="history-summary">Recent local history</summary><div id="repository-history"></div></details>
       <details><summary id="relationships-summary">Source relationships</summary><div id="source-relationships"></div></details>
     </section>
+    <section class="repository-status" id="commit-panel" data-commit-panel="true" data-authority="local-git" aria-label="Local commit control">
+      <header><strong>LOCAL COMMIT</strong><span class="repo-readonly">INDEX + LOCAL BRANCH ONLY · NO REMOTE SYNCHRONIZATION</span></header>
+      <div class="repository-grid">
+        <span id="commit-branch">branch: —</span>
+        <span id="commit-head">HEAD: —</span>
+        <span id="commit-index">index sha256: —</span>
+      </div>
+      <pre id="commit-staged-summary" data-staged-count="0">staged: 0
+(none)</pre>
+      <div class="hint" id="commit-message-label">COMMIT MESSAGE — browser-local draft. Not workstation state. SAVE CHANGES is unaffected.</div>
+      <textarea id="commit-message" data-commit-message="true" rows="4" cols="52" spellcheck="false" aria-label="Commit message, browser-local draft"></textarea>
+      <div><button id="commit-btn" data-action="commit-staged" data-commit-control="true" type="button">COMMIT STAGED</button></div>
+      <div class="hint" id="commit-legend">STAGE FILE / UNSTAGE FILE change the Git index only. COMMIT STAGED creates a local commit and advances this branch only.</div>
+      <div class="source-write-error" id="commit-error" data-error-code="" hidden></div>
+    </section>
     <section class="document-stream" id="document-stream" data-document-stream="true" aria-label="Ordered workstation and Git-backed documents"></section>
   </main>
 </div>
